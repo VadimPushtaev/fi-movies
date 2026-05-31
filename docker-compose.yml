@@ -1,0 +1,51 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: fi_movies
+      POSTGRES_USER: fi_movies
+      POSTGRES_PASSWORD: fi_movies
+    ports:
+      - "127.0.0.1:${POSTGRES_HOST_PORT:-55432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fi_movies -d fi_movies"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  migrate:
+    build: .
+    command: ["alembic", "upgrade", "head"]
+    environment:
+      DATABASE_URL: postgresql+psycopg://fi_movies:fi_movies@db:5432/fi_movies
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    build: .
+    command: ["uvicorn", "fi_movies.web:app", "--host", "0.0.0.0", "--port", "8000"]
+    environment:
+      DATABASE_URL: postgresql+psycopg://fi_movies:fi_movies@db:5432/fi_movies
+      APP_ENV: docker
+    ports:
+      - "127.0.0.1:${WEB_HOST_PORT:-58000}:8000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  worker:
+    build: .
+    command: ["python", "-m", "fi_movies.worker"]
+    environment:
+      DATABASE_URL: postgresql+psycopg://fi_movies:fi_movies@db:5432/fi_movies
+      SCRAPE_INTERVAL_SECONDS: "1800"
+      NYTLEFFAAN_START_CITY: helsinki
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+volumes:
+  postgres-data:

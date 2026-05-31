@@ -1,0 +1,290 @@
+:root {
+  color-scheme: light;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #f5f2ec;
+  color: #171717;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+}
+
+a {
+  color: inherit;
+}
+
+.topbar {
+  align-items: center;
+  background: #111;
+  color: #fff;
+  display: flex;
+  gap: 24px;
+  justify-content: space-between;
+  padding: 16px clamp(16px, 4vw, 48px);
+}
+
+.brand {
+  font-size: 20px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.topbar nav a {
+  color: #fff;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+main {
+  margin: 0 auto;
+  max-width: 1180px;
+  padding: 24px clamp(14px, 3vw, 32px) 56px;
+}
+
+.toolbar {
+  background: #fff;
+  border: 1px solid #ded8cf;
+  border-radius: 8px;
+  display: grid;
+  gap: 16px;
+  padding: 16px;
+}
+
+.filters {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(150px, 1fr) minmax(160px, 1fr) minmax(180px, 2fr) auto;
+}
+
+label {
+  display: grid;
+  gap: 5px;
+}
+
+label span {
+  color: #5d5d5d;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+select,
+input,
+button {
+  border: 1px solid #b9b2a8;
+  border-radius: 6px;
+  font: inherit;
+  min-height: 42px;
+  padding: 8px 10px;
+}
+
+button,
+.date-nav a,
+.time-link {
+  background: #1f6f55;
+  border: 0;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+button {
+  align-self: end;
+}
+
+.date-nav {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.date-nav a {
+  border-radius: 6px;
+  padding: 9px 12px;
+}
+
+.status {
+  align-items: end;
+  display: flex;
+  justify-content: space-between;
+  margin: 28px 0 18px;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-size: 32px;
+  line-height: 1.1;
+}
+
+.status p,
+.scrape-status,
+.movie-header p,
+.description,
+.theater-meta p {
+  color: #615f5b;
+}
+
+.scrape-status {
+  font-size: 13px;
+}
+
+.movie-list {
+  display: grid;
+  gap: 16px;
+}
+
+.movie-card {
+  background: #fff;
+  border: 1px solid #ded8cf;
+  border-radius: 8px;
+  display: grid;
+  gap: 20px;
+  grid-template-columns: 150px 1fr;
+  overflow: hidden;
+  padding: 16px;
+}
+
+.poster {
+  aspect-ratio: 2 / 3;
+  background: #292826;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.poster img {
+  display: block;
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
+}
+
+.poster-placeholder {
+  align-items: center;
+  color: #fff;
+  display: flex;
+  font-size: 52px;
+  font-weight: 800;
+  height: 100%;
+  justify-content: center;
+}
+
+.movie-body {
+  display: grid;
+  gap: 14px;
+}
+
+.movie-header {
+  align-items: start;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+}
+
+h2 {
+  font-size: 24px;
+  line-height: 1.2;
+}
+
+.premiere {
+  background: #efe5d3;
+  border-radius: 5px;
+  color: #3b3324;
+  flex: 0 0 auto;
+  font-size: 13px;
+  font-weight: 800;
+  padding: 6px 8px;
+}
+
+.description {
+  display: -webkit-box;
+  font-size: 14px;
+  line-height: 1.45;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.theater-list {
+  border-top: 1px solid #ebe5dc;
+}
+
+.theater-row {
+  align-items: center;
+  border-bottom: 1px solid #ebe5dc;
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(180px, 260px) 1fr;
+  padding: 12px 0;
+}
+
+.theater-row:last-child {
+  border-bottom: 0;
+}
+
+h3 {
+  font-size: 16px;
+}
+
+.theater-meta p {
+  font-size: 13px;
+}
+
+.times {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.time-link,
+.time-chip {
+  border-radius: 5px;
+  display: inline-flex;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1;
+  padding: 8px 9px;
+}
+
+.time-chip {
+  background: #e7e7e7;
+}
+
+.empty-state {
+  background: #fff;
+  border: 1px solid #ded8cf;
+  border-radius: 8px;
+  padding: 28px;
+  text-align: center;
+}
+
+@media (max-width: 760px) {
+  .filters,
+  .movie-card,
+  .theater-row {
+    grid-template-columns: 1fr;
+  }
+
+  .status,
+  .movie-header {
+    align-items: start;
+    flex-direction: column;
+  }
+
+  .poster {
+    max-width: 180px;
+  }
+}
+

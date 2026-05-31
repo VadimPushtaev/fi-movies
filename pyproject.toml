@@ -1,0 +1,35 @@
+[project]
+name = "fi-movies"
+version = "0.1.0"
+description = "Movie showtimes in Finland, populated by a scraper worker."
+authors = [
+    { name = "Vadim" }
+]
+readme = "README.md"
+requires-python = ">=3.12,<4.0"
+dependencies = [
+    "alembic>=1.16.0,<2.0.0",
+    "beautifulsoup4>=4.13.0,<5.0.0",
+    "fastapi>=0.115.0,<1.0.0",
+    "httpx>=0.28.0,<1.0.0",
+    "jinja2>=3.1.0,<4.0.0",
+    "psycopg[binary]>=3.2.0,<4.0.0",
+    "pydantic-settings>=2.9.0,<3.0.0",
+    "sqlalchemy>=2.0.0,<3.0.0",
+    "uvicorn[standard]>=0.34.0,<1.0.0",
+]
+
+[tool.poetry]
+packages = [{ include = "fi_movies", from = "src" }]
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.5"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+

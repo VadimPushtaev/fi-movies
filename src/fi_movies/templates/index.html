@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}Showtimes - FI Movies{% endblock %}
+
+{% block content %}
+<section class="toolbar" aria-label="Filters">
+  <form class="filters" method="get">
+    <label>
+      <span>City</span>
+      <select name="city">
+        {% if not cities %}
+          <option value="helsinki" selected>Helsinki</option>
+        {% endif %}
+        {% for item in cities %}
+          <option value="{{ item.slug }}" {% if item.slug == selected_city %}selected{% endif %}>{{ item.name }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>
+      <span>Date</span>
+      <input type="date" name="date" value="{{ selected_date.isoformat() }}">
+    </label>
+    <label class="search">
+      <span>Search</span>
+      <input type="search" name="q" value="{{ query }}" placeholder="Movie or theater">
+    </label>
+    <button type="submit">Apply</button>
+  </form>
+  <div class="date-nav">
+    <a href="/?city={{ selected_city }}&date={{ prev_date.isoformat() }}&q={{ query }}">Previous</a>
+    <strong>{{ selected_date.strftime("%a %d.%m.%Y") }}</strong>
+    <a href="/?city={{ selected_city }}&date={{ next_date.isoformat() }}&q={{ query }}">Next</a>
+  </div>
+</section>
+
+<section class="status">
+  <div>
+    <h1>Movies in {{ selected_city|capitalize }}</h1>
+    <p>{{ showtime_count }} showtimes</p>
+  </div>
+  {% if latest_run %}
+    <p class="scrape-status">Last scrape: {{ latest_run.status }} at {{ latest_run.finished_at or latest_run.started_at }}</p>
+  {% endif %}
+</section>
+
+{% if groups %}
+  <section class="movie-list">
+    {% for group in groups %}
+      <article class="movie-card">
+        <div class="poster">
+          {% if group.movie.poster_url %}
+            <img src="{{ group.movie.poster_url }}" alt="{{ group.movie.title }} poster" loading="lazy">
+          {% else %}
+            <div class="poster-placeholder">{{ group.movie.title[:1] }}</div>
+          {% endif %}
+        </div>
+        <div class="movie-body">
+          <div class="movie-header">
+            <div>
+              <h2>{{ group.movie.title }}</h2>
+              <p>
+                {% if group.movie.age_limit %}{{ group.movie.age_limit }}{% endif %}
+                {% if group.movie.duration_minutes %} · {{ group.movie.duration_minutes }} min{% endif %}
+                {% if group.movie.genres %} · {{ group.movie.genres }}{% endif %}
+              </p>
+            </div>
+            {% if group.movie.premiere_date %}
+              <span class="premiere">{{ group.movie.premiere_date.strftime("%d.%m.%Y") }}</span>
+            {% endif %}
+          </div>
+          {% if group.movie.description %}
+            <p class="description">{{ group.movie.description }}</p>
+          {% endif %}
+          <div class="theater-list">
+            {% for theater_group in group.theaters %}
+              <section class="theater-row">
+                <div class="theater-meta">
+                  <h3>{{ theater_group.theater.name }}</h3>
+                  {% if theater_group.theater.address %}
+                    <p>{{ theater_group.theater.address }}</p>
+                  {% endif %}
+                </div>
+                <div class="times">
+                  {% for show in theater_group.showtimes %}
+                    {% if show.order_page_url %}
+                      <a class="time-link" href="{{ show.order_page_url }}" target="_blank" rel="noopener">
+                        {{ show.starts_at.strftime("%H:%M") }}
+                      </a>
+                    {% else %}
+                      <span class="time-chip">{{ show.starts_at.strftime("%H:%M") }}</span>
+                    {% endif %}
+                  {% endfor %}
+                </div>
+              </section>
+            {% endfor %}
+          </div>
+        </div>
+      </article>
+    {% endfor %}
+  </section>
+{% else %}
+  <section class="empty-state">
+    <h2>No showtimes found</h2>
+    <p>Try a different date or run the scraper worker.</p>
+  </section>
+{% endif %}
+{% endblock %}
+
