@@ -44,6 +44,7 @@ class NormalizedMovie:
     script: str | None
     actors: str | None
     raw_url: str | None
+    tmdb_id: int | None = None
 
 
 @dataclass(frozen=True)

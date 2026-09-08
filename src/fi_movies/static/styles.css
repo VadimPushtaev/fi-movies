@@ -224,6 +224,29 @@ h1 {
   justify-content: space-between;
 }
 
+.letterboxd-link {
+  align-items: center;
+  border-radius: 6px;
+  display: inline-flex;
+  flex: 0 0 auto;
+  justify-content: center;
+  min-height: 44px;
+  min-width: 44px;
+}
+
+.letterboxd-link:hover {
+  background: #f5f2ec;
+}
+
+.letterboxd-link:focus-visible {
+  outline: 2px solid #1f6f55;
+  outline-offset: 2px;
+}
+
+.letterboxd-link img {
+  display: block;
+}
+
 h2 {
   font-size: 24px;
   line-height: 1.2;
@@ -298,8 +321,7 @@ h3 {
     grid-template-columns: 1fr;
   }
 
-  .status,
-  .movie-header {
+  .status {
     align-items: start;
     flex-direction: column;
   }

@@ -38,6 +38,8 @@ def upsert_movie(session: Session, movie: NormalizedMovie) -> Movie:
         session.add(existing)
 
     existing.source_internal_id = movie.source_internal_id
+    if movie.tmdb_id is not None:
+        existing.tmdb_id = movie.tmdb_id
     existing.slug = movie.slug
     existing.title = movie.title
     existing.original_title = movie.original_title

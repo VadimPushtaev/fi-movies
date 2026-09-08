@@ -6,11 +6,20 @@ PostgreSQL and populated by a separate scraper worker container.
 ## Run With Docker Compose
 
 ```bash
-docker compose up --build
+docker compose up -d --build
 ```
 
 Open `http://localhost:58000`. The worker scrapes once on startup and then repeats
 every `SCRAPE_INTERVAL_SECONDS` seconds.
+
+The database, web app, and worker restart automatically after crashes and system
+reboots, provided Docker starts at boot (`sudo systemctl enable --now docker` on
+Linux with systemd). The migration container runs once during startup and exits.
+Services intentionally stopped with `docker compose stop` or removed with
+`docker compose down` stay stopped until you run `docker compose up -d` again.
+
+View service status with `docker compose ps` and follow logs with
+`docker compose logs -f --tail=100`.
 
 The worker imports showtimes from NytLeffaan, Kino Regina, Korjaamo Kino, and Riviera by
 default. Disable the extra sources with `KINOREGINA_ENABLED=false` or
@@ -25,6 +34,12 @@ docker compose up --build
 ```
 
 You can also set `TMDB_READ_ACCESS_TOKEN` or `TMDB_API_KEY` explicitly.
+
+Each movie card links to Letterboxd in a new tab. TMDB-enriched movies link directly
+to the film; unmatched movies fall back to a title search. The worker populates
+these IDs on its next scrape. The logo comes from the
+[official Letterboxd brand assets](https://letterboxd.com/about/brand/), and direct
+links use [Letterboxd's TMDB URL format](https://letterboxd.com/about/faq/#linking-to-films).
 
 By default, Docker Compose exposes the web app on host port `58000` and
 PostgreSQL on host port `55432` to avoid common local port conflicts. Override

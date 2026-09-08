@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass(frozen=True)
 class TmdbMovieMetadata:
+    tmdb_id: int
     title: str | None
     overview: str | None
     genres: list[str]
@@ -89,7 +90,7 @@ class TmdbClient:
             if match is None:
                 continue
             details = await self._movie_details(client, movie_id=int(match["id"]))
-            return metadata_from_details(details)
+            return metadata_from_details(details, tmdb_id=int(match["id"]))
         return None
 
     async def _search_movies(
@@ -199,7 +200,7 @@ def release_year_from_result(result: dict[str, Any]) -> int | None:
     return int(raw[:4])
 
 
-def metadata_from_details(details: dict[str, Any]) -> TmdbMovieMetadata:
+def metadata_from_details(details: dict[str, Any], *, tmdb_id: int) -> TmdbMovieMetadata:
     genres = [
         str(genre["name"]).strip()
         for genre in details.get("genres", [])
@@ -207,6 +208,7 @@ def metadata_from_details(details: dict[str, Any]) -> TmdbMovieMetadata:
     ]
     runtime = details.get("runtime")
     return TmdbMovieMetadata(
+        tmdb_id=tmdb_id,
         title=clean_metadata_text(details.get("title")),
         overview=clean_metadata_text(details.get("overview")),
         genres=genres,
@@ -219,6 +221,7 @@ def apply_metadata(movie: NormalizedMovie, metadata: TmdbMovieMetadata | None) -
         return movie
     return replace(
         movie,
+        tmdb_id=metadata.tmdb_id,
         title=metadata.title or movie.title,
         description=metadata.overview or movie.description,
         genres=metadata.genres or movie.genres,

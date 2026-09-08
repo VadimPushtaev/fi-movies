@@ -54,6 +54,7 @@ class Movie(Base, TimestampMixin):
     source: Mapped[str] = mapped_column(String(80), nullable=False)
     source_movie_id: Mapped[str] = mapped_column(String(120), nullable=False)
     source_internal_id: Mapped[str | None] = mapped_column(String(120))
+    tmdb_id: Mapped[int | None] = mapped_column(Integer)
     slug: Mapped[str] = mapped_column(String(240), nullable=False)
     title: Mapped[str] = mapped_column(String(500), nullable=False)
     original_title: Mapped[str | None] = mapped_column(String(500))
@@ -106,4 +107,3 @@ class ScrapeRun(Base):
     movies_seen: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     theaters_seen: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     showtimes_seen: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-

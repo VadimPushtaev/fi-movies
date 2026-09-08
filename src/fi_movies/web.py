@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections import defaultdict
 from datetime import date, datetime, timedelta
 from typing import Any
-from urllib.parse import urlparse
+from urllib.parse import quote, urlparse
 from zoneinfo import ZoneInfo
 
 from fastapi import Depends, FastAPI, Query, Request
@@ -79,9 +79,12 @@ def group_showtimes(showtimes: list) -> list[dict]:
             movie_key,
             {
                 "movie": showtime.movie,
+                "tmdb_id": showtime.movie.tmdb_id,
                 "showtimes": {},
             },
         )
+        if movie_entry["tmdb_id"] is None:
+            movie_entry["tmdb_id"] = showtime.movie.tmdb_id
         if movie_quality_score(showtime.movie) > movie_quality_score(movie_entry["movie"]):
             movie_entry["movie"] = showtime.movie
         showtime_key = canonical_showtime_key(showtime)
@@ -97,6 +100,8 @@ def group_showtimes(showtimes: list) -> list[dict]:
         result.append(
             {
                 "movie": item["movie"],
+                "letterboxd_url": letterboxd_url(item["movie"], tmdb_id=item["tmdb_id"]),
+                "letterboxd_is_search": item["tmdb_id"] is None,
                 "theaters": [
                     {"theater": theater, "showtimes": sorted(times, key=lambda show: show.starts_at)}
                     for theater, times in sorted(theaters.items(), key=lambda pair: pair[0].name)
@@ -104,6 +109,13 @@ def group_showtimes(showtimes: list) -> list[dict]:
             }
         )
     return sorted(result, key=lambda item: item["movie"].title.lower())
+
+
+def letterboxd_url(movie: Any, *, tmdb_id: int | None) -> str:
+    if tmdb_id is not None:
+        return f"https://letterboxd.com/tmdb/{tmdb_id}/"
+    title = movie.original_title or movie.title
+    return f"https://letterboxd.com/search/films/{quote(title, safe='')}/"
 
 
 def count_grouped_showtimes(groups: list[dict]) -> int:

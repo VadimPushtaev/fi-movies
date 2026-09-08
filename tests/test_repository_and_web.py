@@ -1,13 +1,15 @@
 from dataclasses import replace
 from datetime import date, datetime
 
+import pytest
+from bs4 import BeautifulSoup
 from starlette.requests import Request
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from fi_movies.models import Base
-from fi_movies.repositories import import_normalized_data, showtimes_for_day
+from fi_movies.repositories import import_normalized_data, showtimes_for_day, upsert_movie
 from fi_movies.scrapers.nytleffaan import NormalizedMovie, NormalizedShowtime, NormalizedTheater
 from fi_movies.web import app, group_showtimes, index
 
@@ -110,9 +112,11 @@ def test_query_showtimes_can_filter_by_time_window() -> None:
     assert [result.starts_at.strftime("%H:%M") for result in results] == ["18:30"]
 
 
-def test_index_page_renders_grouped_showtimes() -> None:
+@pytest.mark.parametrize("tmdb_id", [None, 123])
+def test_index_page_renders_grouped_showtimes(tmdb_id: int | None) -> None:
     session = make_session()
     movie, theater, showtime = sample_data()
+    movie = replace(movie, tmdb_id=tmdb_id)
     import_normalized_data(session, movies=[movie], theaters=[theater], showtimes=[showtime])
 
     request = Request(
@@ -148,6 +152,27 @@ def test_index_page_renders_grouped_showtimes() -> None:
     assert 'name="start_minute"' in body
     assert 'name="end_minute"' in body
     assert "22.08.2025" not in body
+    link = BeautifulSoup(body, "html.parser").select_one(".movie-card .letterboxd-link")
+    assert link is not None
+    assert link["href"] == (
+        "https://letterboxd.com/tmdb/123/" if tmdb_id else "https://letterboxd.com/search/films/Kuraudo/"
+    )
+    assert link["target"] == "_blank"
+    assert set(link["rel"]) == {"noopener", "noreferrer"}
+    assert "Cloud" in link["aria-label"]
+    assert link.img["src"].endswith("/static/letterboxd.svg")
+
+
+def test_movie_import_preserves_tmdb_id_when_enrichment_is_unavailable() -> None:
+    session = make_session()
+    movie, _, _ = sample_data()
+    saved = upsert_movie(session, replace(movie, tmdb_id=123))
+    session.commit()
+
+    upsert_movie(session, movie)
+    session.commit()
+    session.refresh(saved)
+    assert saved.tmdb_id == 123
 
 
 def test_group_showtimes_deduplicates_same_movie_from_multiple_sources() -> None:
@@ -156,6 +181,7 @@ def test_group_showtimes_deduplicates_same_movie_from_multiple_sources() -> None
     duplicate_movie = replace(
         movie,
         source="riviera",
+        tmdb_id=123,
         source_movie_id="200",
         title="Cloud",
         original_title="Kuraudo",
@@ -187,6 +213,7 @@ def test_group_showtimes_deduplicates_same_movie_from_multiple_sources() -> None
 
     assert len(groups) == 1
     assert groups[0]["movie"].title == "Cloud"
+    assert groups[0]["letterboxd_url"] == "https://letterboxd.com/tmdb/123/"
     assert [item["theater"].name for item in groups[0]["theaters"]] == ["Finnkino ITIS", "Riviera"]
     assert [
         show.starts_at.strftime("%H:%M")

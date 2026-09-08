@@ -116,6 +116,7 @@ def test_tmdb_enrichment_uses_original_title_and_english_metadata() -> None:
     assert enriched[0].title == "Project Hail Mary"
     assert enriched[0].description == "A science teacher wakes up alone on a spaceship."
     assert enriched[0].genres == ["Science Fiction", "Adventure"]
+    assert enriched[0].tmdb_id == 123
 
 
 def test_tmdb_enrichment_is_noop_without_credentials() -> None:

@@ -90,6 +90,16 @@
                 {% if group.movie.genres %} · {{ group.movie.genres }}{% endif %}
               </p>
             </div>
+            <a
+              class="letterboxd-link"
+              href="{{ group.letterboxd_url }}"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="{% if group.letterboxd_is_search %}Search for{% else %}View{% endif %} {{ group.movie.title }} on Letterboxd (opens in a new tab)"
+              title="{% if group.letterboxd_is_search %}Search on{% else %}View on{% endif %} Letterboxd (opens in a new tab)"
+            >
+              <img src="{{ url_for('static', path='letterboxd.svg') }}" alt="" width="32" height="32">
+            </a>
           </div>
           {% if group.movie.description %}
             <p class="description">{{ group.movie.description }}</p>

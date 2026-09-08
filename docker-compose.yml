@@ -1,6 +1,7 @@
 services:
   db:
     image: postgres:16-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_DB: fi_movies
       POSTGRES_USER: fi_movies
@@ -26,6 +27,7 @@ services:
 
   web:
     build: .
+    restart: unless-stopped
     command: ["uvicorn", "fi_movies.web:app", "--host", "0.0.0.0", "--port", "8000"]
     environment:
       DATABASE_URL: postgresql+psycopg://fi_movies:fi_movies@db:5432/fi_movies
@@ -38,6 +40,7 @@ services:
 
   worker:
     build: .
+    restart: unless-stopped
     command: ["python", "-m", "fi_movies.worker"]
     environment:
       DATABASE_URL: postgresql+psycopg://fi_movies:fi_movies@db:5432/fi_movies
