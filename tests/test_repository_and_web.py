@@ -1,3 +1,4 @@
+from dataclasses import replace
 from datetime import date, datetime
 
 from starlette.requests import Request
@@ -8,7 +9,7 @@ from sqlalchemy.pool import StaticPool
 from fi_movies.models import Base
 from fi_movies.repositories import import_normalized_data, showtimes_for_day
 from fi_movies.scrapers.nytleffaan import NormalizedMovie, NormalizedShowtime, NormalizedTheater
-from fi_movies.web import app, index
+from fi_movies.web import app, group_showtimes, index
 
 
 def make_session():
@@ -87,6 +88,28 @@ def test_import_and_query_showtimes() -> None:
     assert results[0].theater.name == "Finnkino ITIS"
 
 
+def test_query_showtimes_can_filter_by_time_window() -> None:
+    session = make_session()
+    movie, theater, showtime = sample_data()
+    late_showtime = replace(
+        showtime,
+        source_key="show-2",
+        source_show_id="def",
+        starts_at=datetime(2026, 5, 31, 23, 30),
+    )
+    import_normalized_data(session, movies=[movie], theaters=[theater], showtimes=[showtime, late_showtime])
+
+    results = showtimes_for_day(
+        session,
+        city_slug="helsinki",
+        day=date(2026, 5, 31),
+        start_minute=15 * 60,
+        end_minute=23 * 60,
+    )
+
+    assert [result.starts_at.strftime("%H:%M") for result in results] == ["18:30"]
+
+
 def test_index_page_renders_grouped_showtimes() -> None:
     session = make_session()
     movie, theater, showtime = sample_data()
@@ -106,10 +129,167 @@ def test_index_page_renders_grouped_showtimes() -> None:
             "client": ("testclient", 50000),
         }
     )
-    response = index(request, session, city="helsinki", day=date(2026, 5, 31), q=None)
+    response = index(
+        request,
+        session,
+        city="helsinki",
+        day=date(2026, 5, 31),
+        q=None,
+        start_minute=15 * 60,
+        end_minute=23 * 60,
+    )
 
     assert response.status_code == 200
     body = response.body.decode()
     assert "Cloud" in body
     assert "Finnkino ITIS" in body
     assert "18:30" in body
+    assert "15:00 - 23:00" in body
+    assert 'name="start_minute"' in body
+    assert 'name="end_minute"' in body
+    assert "22.08.2025" not in body
+
+
+def test_group_showtimes_deduplicates_same_movie_from_multiple_sources() -> None:
+    session = make_session()
+    movie, theater, showtime = sample_data()
+    duplicate_movie = replace(
+        movie,
+        source="riviera",
+        source_movie_id="200",
+        title="Cloud",
+        original_title="Kuraudo",
+    )
+    duplicate_theater = replace(
+        theater,
+        source="riviera",
+        source_theater_id="4",
+        name="Riviera",
+        address="Harjukatu 2",
+    )
+    duplicate_showtime = replace(
+        showtime,
+        source="riviera",
+        source_key="show-3",
+        source_show_id="ghi",
+        source_movie_id="200",
+        source_theater_id="4",
+        starts_at=datetime(2026, 5, 31, 20, 0),
+    )
+    import_normalized_data(
+        session,
+        movies=[movie, duplicate_movie],
+        theaters=[theater, duplicate_theater],
+        showtimes=[showtime, duplicate_showtime],
+    )
+
+    groups = group_showtimes(showtimes_for_day(session, city_slug="helsinki", day=date(2026, 5, 31)))
+
+    assert len(groups) == 1
+    assert groups[0]["movie"].title == "Cloud"
+    assert [item["theater"].name for item in groups[0]["theaters"]] == ["Finnkino ITIS", "Riviera"]
+    assert [
+        show.starts_at.strftime("%H:%M")
+        for theater_group in groups[0]["theaters"]
+        for show in theater_group["showtimes"]
+    ] == ["18:30", "20:00"]
+
+
+def test_group_showtimes_hides_duplicate_source_rows_and_prefers_valid_poster() -> None:
+    session = make_session()
+    movie, theater, showtime = sample_data()
+    bad_movie = replace(
+        movie,
+        source_movie_id="5353",
+        poster_url="https://nytleffaan.fi/Photo Uploaded",
+    )
+    good_movie = replace(
+        movie,
+        source_movie_id="100004410",
+        poster_url="https://nytleffaan.fi/data/images/100004410.jpg",
+    )
+    bad_showtime = replace(showtime, source_movie_id="5353")
+    duplicate_showtime = replace(
+        showtime,
+        source_key="show-duplicate",
+        source_movie_id="100004410",
+    )
+    import_normalized_data(
+        session,
+        movies=[bad_movie, good_movie],
+        theaters=[theater],
+        showtimes=[bad_showtime, duplicate_showtime],
+    )
+
+    groups = group_showtimes(showtimes_for_day(session, city_slug="helsinki", day=date(2026, 5, 31)))
+
+    assert len(groups) == 1
+    assert groups[0]["movie"].poster_url == "https://nytleffaan.fi/data/images/100004410.jpg"
+    assert len(groups[0]["theaters"]) == 1
+    assert [show.starts_at.strftime("%H:%M") for show in groups[0]["theaters"][0]["showtimes"]] == ["18:30"]
+
+
+def test_group_showtimes_prefers_direct_cinema_source_for_same_show_id() -> None:
+    session = make_session()
+    movie, theater, showtime = sample_data()
+    aggregator_movie = replace(
+        movie,
+        title="Hamnet",
+        original_title="Hamnet",
+        source="nytleffaan",
+        source_movie_id="5301",
+    )
+    direct_movie = replace(
+        movie,
+        title="Hamnet",
+        original_title="Hamnet",
+        source="riviera",
+        source_movie_id="30612",
+    )
+    aggregator_theater = replace(
+        theater,
+        source="nytleffaan",
+        source_theater_id="70",
+        name="Riviera",
+        address="Harjukatu 2, 00500 Helsinki",
+    )
+    direct_theater = replace(
+        theater,
+        source="riviera",
+        source_theater_id="riviera-punavuori",
+        name="Riviera",
+        address="Telakkakatu 7, 00150 Helsinki",
+    )
+    aggregator_showtime = replace(
+        showtime,
+        source="nytleffaan",
+        source_key="nytleffaan-hamnet",
+        source_show_id="970449",
+        source_movie_id="5301",
+        source_theater_id="70",
+        starts_at=datetime(2026, 6, 4, 18, 30),
+        order_page_url="http://tickets.rivieracinemas.fi/websales/show/970449/",
+    )
+    direct_showtime = replace(
+        showtime,
+        source="riviera",
+        source_key="riviera-hamnet",
+        source_show_id="970449",
+        source_movie_id="30612",
+        source_theater_id="riviera-punavuori",
+        starts_at=datetime(2026, 6, 4, 18, 30),
+        order_page_url="https://www.rivieracinemas.fi/Event/30612?show=970449#tickets",
+    )
+    import_normalized_data(
+        session,
+        movies=[aggregator_movie, direct_movie],
+        theaters=[aggregator_theater, direct_theater],
+        showtimes=[aggregator_showtime, direct_showtime],
+    )
+
+    groups = group_showtimes(showtimes_for_day(session, city_slug="helsinki", day=date(2026, 6, 4)))
+
+    assert len(groups) == 1
+    assert len(groups[0]["theaters"]) == 1
+    assert groups[0]["theaters"][0]["theater"].address == "Telakkakatu 7, 00150 Helsinki"
+    assert [show.starts_at.strftime("%H:%M") for show in groups[0]["theaters"][0]["showtimes"]] == ["18:30"]

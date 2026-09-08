@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from collections import defaultdict
 from datetime import date, datetime, timedelta
+from typing import Any
+from urllib.parse import urlparse
 from zoneinfo import ZoneInfo
 
 from fastapi import Depends, FastAPI, Query, Request
@@ -30,10 +32,21 @@ def index(
     city: str = Query(default="helsinki"),
     day: date | None = Query(default=None, alias="date"),
     q: str | None = Query(default=None),
+    start_minute: int = Query(default=0, ge=0, le=1440),
+    end_minute: int = Query(default=1440, ge=0, le=1440),
 ) -> HTMLResponse:
     selected_date = day or datetime.now(ZoneInfo("Europe/Helsinki")).date()
     selected_city = city.strip().lower() or "helsinki"
-    showtimes = showtimes_for_day(session, city_slug=selected_city, day=selected_date, query=q)
+    selected_start_minute = min(start_minute, end_minute)
+    selected_end_minute = max(start_minute, end_minute)
+    showtimes = showtimes_for_day(
+        session,
+        city_slug=selected_city,
+        day=selected_date,
+        query=q,
+        start_minute=selected_start_minute,
+        end_minute=selected_end_minute,
+    )
     grouped = group_showtimes(showtimes)
     cities = list_cities(session)
     dates = available_dates(session, city_slug=selected_city)
@@ -48,9 +61,12 @@ def index(
             "selected_city": selected_city,
             "selected_date": selected_date,
             "query": q or "",
+            "selected_start_minute": selected_start_minute,
+            "selected_end_minute": selected_end_minute,
+            "selected_time_range": format_time_range(selected_start_minute, selected_end_minute),
             "prev_date": selected_date - timedelta(days=1),
             "next_date": selected_date + timedelta(days=1),
-            "showtime_count": len(showtimes),
+            "showtime_count": count_grouped_showtimes(grouped),
         },
     )
 
@@ -58,24 +74,109 @@ def index(
 def group_showtimes(showtimes: list) -> list[dict]:
     by_movie = {}
     for showtime in showtimes:
+        movie_key = canonical_movie_key(showtime.movie)
         movie_entry = by_movie.setdefault(
-            showtime.movie.id,
+            movie_key,
             {
                 "movie": showtime.movie,
-                "theaters": defaultdict(list),
+                "showtimes": {},
             },
         )
-        movie_entry["theaters"][showtime.theater].append(showtime)
+        if movie_quality_score(showtime.movie) > movie_quality_score(movie_entry["movie"]):
+            movie_entry["movie"] = showtime.movie
+        showtime_key = canonical_showtime_key(showtime)
+        existing_showtime = movie_entry["showtimes"].get(showtime_key)
+        if existing_showtime is None or showtime_quality_score(showtime) > showtime_quality_score(existing_showtime):
+            movie_entry["showtimes"][showtime_key] = showtime
 
     result = []
     for item in by_movie.values():
+        theaters = defaultdict(list)
+        for showtime in item["showtimes"].values():
+            theaters[showtime.theater].append(showtime)
         result.append(
             {
                 "movie": item["movie"],
                 "theaters": [
                     {"theater": theater, "showtimes": sorted(times, key=lambda show: show.starts_at)}
-                    for theater, times in sorted(item["theaters"].items(), key=lambda pair: pair[0].name)
+                    for theater, times in sorted(theaters.items(), key=lambda pair: pair[0].name)
                 ],
             }
         )
     return sorted(result, key=lambda item: item["movie"].title.lower())
+
+
+def count_grouped_showtimes(groups: list[dict]) -> int:
+    return sum(len(theater_group["showtimes"]) for group in groups for theater_group in group["theaters"])
+
+
+def canonical_movie_key(movie: Any) -> str:
+    return "|".join(
+        [
+            normalize_display_value(movie.original_title or movie.title),
+            str(movie.duration_minutes or ""),
+        ]
+    )
+
+
+def canonical_showtime_key(showtime: Any) -> tuple[Any, ...]:
+    if showtime.source_show_id:
+        return ("show", normalize_display_value(showtime.source_show_id), showtime.starts_at)
+    theater = showtime.theater
+    return (
+        "visible",
+        normalize_display_value(getattr(theater, "name", None)),
+        normalize_display_value(getattr(theater, "address", None)),
+        showtime.starts_at,
+        showtime.order_page_url,
+        showtime.source_show_id,
+        showtime.source_raw_id,
+    )
+
+
+def showtime_quality_score(showtime: Any) -> tuple[int, int, int, int]:
+    return (
+        source_priority(showtime.source),
+        int(bool(showtime.order_page_url)),
+        int(bool(getattr(showtime.theater, "address", None))),
+        int(bool(showtime.source_raw_id)),
+    )
+
+
+def source_priority(source: str | None) -> int:
+    if source in {"kinoregina", "korjaamo", "riviera"}:
+        return 2
+    return 1
+
+
+def movie_quality_score(movie: Any) -> tuple[int, int, int, int, int, int]:
+    return (
+        int(is_valid_poster_url(movie.poster_url)),
+        int(bool(movie.description)),
+        int(bool(movie.genres)),
+        int(bool(movie.age_limit)),
+        int(bool(movie.original_title)),
+        int(bool(movie.duration_minutes)),
+    )
+
+
+def is_valid_poster_url(url: str | None) -> bool:
+    if not url or any(character.isspace() for character in url):
+        return False
+    parsed = urlparse(url)
+    return parsed.scheme in {"http", "https"} and bool(parsed.netloc) and "photo uploaded" not in url.casefold()
+
+
+def normalize_display_value(value: str | None) -> str:
+    return " ".join((value or "").casefold().strip().split())
+
+
+def format_time_range(start_minute: int, end_minute: int) -> str:
+    return f"{format_minute(start_minute)} - {format_minute(end_minute)}"
+
+
+def format_minute(value: int) -> str:
+    if value >= 24 * 60:
+        return "24:00"
+    hours, minutes = divmod(value, 60)
+    return f"{hours:02d}:{minutes:02d}"

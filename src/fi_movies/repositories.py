@@ -187,16 +187,26 @@ def showtimes_for_day(
     city_slug: str,
     day: date,
     query: str | None = None,
+    start_minute: int | None = None,
+    end_minute: int | None = None,
 ) -> list[Showtime]:
     day_start = datetime.combine(day, time.min)
     day_end = day_start + timedelta(days=1)
+    window_start = day_start + timedelta(minutes=start_minute or 0)
+    window_end = day_start + timedelta(minutes=end_minute if end_minute is not None else 24 * 60)
     statement: Select[tuple[Showtime]] = (
         select(Showtime)
         .join(Showtime.theater)
         .join(Theater.city)
         .join(Showtime.movie)
         .options(joinedload(Showtime.movie), joinedload(Showtime.theater).joinedload(Theater.city))
-        .where(City.slug == city_slug, Showtime.starts_at >= day_start, Showtime.starts_at < day_end)
+        .where(
+            City.slug == city_slug,
+            Showtime.starts_at >= day_start,
+            Showtime.starts_at < day_end,
+            Showtime.starts_at >= window_start,
+            Showtime.starts_at <= window_end,
+        )
         .order_by(Movie.title, Theater.name, Showtime.starts_at)
     )
     if query:
@@ -216,4 +226,3 @@ def available_dates(session: Session, *, city_slug: str) -> list[date]:
         .order_by(date_expr)
     )
     return [row[0] for row in rows]
-

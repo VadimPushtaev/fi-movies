@@ -43,6 +43,15 @@ services:
       DATABASE_URL: postgresql+psycopg://fi_movies:fi_movies@db:5432/fi_movies
       SCRAPE_INTERVAL_SECONDS: "1800"
       NYTLEFFAAN_START_CITY: helsinki
+      KINOREGINA_ENABLED: ${KINOREGINA_ENABLED:-true}
+      KORJAAMO_ENABLED: ${KORJAAMO_ENABLED:-true}
+      RIVIERA_ENABLED: ${RIVIERA_ENABLED:-true}
+      TMDB_API_KEY: ${TMDB_API_KEY:-}
+      TMDB_READ_ACCESS_TOKEN: ${TMDB_READ_ACCESS_TOKEN:-}
+      TMDB_READ_ACCESS_TOKEN_FILE: /run/secrets/tmdb_token
+      TMDB_LANGUAGE: ${TMDB_LANGUAGE:-en-US}
+    volumes:
+      - ./TOKEN:/run/secrets/tmdb_token:ro
     depends_on:
       migrate:
         condition: service_completed_successfully

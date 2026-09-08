@@ -58,7 +58,7 @@ main {
 .filters {
   display: grid;
   gap: 12px;
-  grid-template-columns: minmax(150px, 1fr) minmax(160px, 1fr) minmax(180px, 2fr) auto;
+  grid-template-columns: minmax(150px, 1fr) minmax(160px, 1fr) minmax(180px, 2fr) minmax(180px, 1.4fr) auto;
 }
 
 label {
@@ -66,7 +66,8 @@ label {
   gap: 5px;
 }
 
-label span {
+label span,
+.time-filter legend {
   color: #5d5d5d;
   font-size: 12px;
   font-weight: 700;
@@ -96,6 +97,36 @@ button,
 
 button {
   align-self: end;
+}
+
+.time-filter {
+  border: 0;
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  min-width: 0;
+  padding: 0;
+}
+
+.time-filter output {
+  color: #171717;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.time-sliders {
+  display: grid;
+  gap: 2px;
+  min-height: 42px;
+}
+
+.time-sliders input[type="range"] {
+  accent-color: #1f6f55;
+  border: 0;
+  cursor: pointer;
+  min-height: 18px;
+  padding: 0;
 }
 
 .date-nav {
@@ -198,16 +229,6 @@ h2 {
   line-height: 1.2;
 }
 
-.premiere {
-  background: #efe5d3;
-  border-radius: 5px;
-  color: #3b3324;
-  flex: 0 0 auto;
-  font-size: 13px;
-  font-weight: 800;
-  padding: 6px 8px;
-}
-
 .description {
   display: -webkit-box;
   font-size: 14px;
@@ -287,4 +308,3 @@ h3 {
     max-width: 180px;
   }
 }
-

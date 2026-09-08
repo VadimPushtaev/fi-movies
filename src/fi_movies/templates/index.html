@@ -24,12 +24,38 @@
       <span>Search</span>
       <input type="search" name="q" value="{{ query }}" placeholder="Movie or theater">
     </label>
+    <fieldset class="time-filter">
+      <legend>Time</legend>
+      <output id="timeRangeValue">{{ selected_time_range }}</output>
+      <div class="time-sliders" data-time-range>
+        <input
+          id="startMinute"
+          type="range"
+          name="start_minute"
+          min="0"
+          max="1440"
+          step="30"
+          value="{{ selected_start_minute }}"
+          aria-label="Earliest showtime"
+        >
+        <input
+          id="endMinute"
+          type="range"
+          name="end_minute"
+          min="0"
+          max="1440"
+          step="30"
+          value="{{ selected_end_minute }}"
+          aria-label="Latest showtime"
+        >
+      </div>
+    </fieldset>
     <button type="submit">Apply</button>
   </form>
   <div class="date-nav">
-    <a href="/?city={{ selected_city }}&date={{ prev_date.isoformat() }}&q={{ query }}">Previous</a>
+    <a href="/?city={{ selected_city }}&date={{ prev_date.isoformat() }}&q={{ query|urlencode }}&start_minute={{ selected_start_minute }}&end_minute={{ selected_end_minute }}">Previous</a>
     <strong>{{ selected_date.strftime("%a %d.%m.%Y") }}</strong>
-    <a href="/?city={{ selected_city }}&date={{ next_date.isoformat() }}&q={{ query }}">Next</a>
+    <a href="/?city={{ selected_city }}&date={{ next_date.isoformat() }}&q={{ query|urlencode }}&start_minute={{ selected_start_minute }}&end_minute={{ selected_end_minute }}">Next</a>
   </div>
 </section>
 
@@ -64,9 +90,6 @@
                 {% if group.movie.genres %} · {{ group.movie.genres }}{% endif %}
               </p>
             </div>
-            {% if group.movie.premiere_date %}
-              <span class="premiere">{{ group.movie.premiere_date.strftime("%d.%m.%Y") }}</span>
-            {% endif %}
           </div>
           {% if group.movie.description %}
             <p class="description">{{ group.movie.description }}</p>
@@ -104,5 +127,39 @@
     <p>Try a different date or run the scraper worker.</p>
   </section>
 {% endif %}
-{% endblock %}
+<script>
+  const startInput = document.querySelector("#startMinute");
+  const endInput = document.querySelector("#endMinute");
+  const rangeOutput = document.querySelector("#timeRangeValue");
 
+  function formatMinute(value) {
+    const minutesTotal = Number(value);
+    if (minutesTotal >= 1440) {
+      return "24:00";
+    }
+    const hours = Math.floor(minutesTotal / 60).toString().padStart(2, "0");
+    const minutes = (minutesTotal % 60).toString().padStart(2, "0");
+    return `${hours}:${minutes}`;
+  }
+
+  function updateTimeRange(changedInput) {
+    let start = Number(startInput.value);
+    let end = Number(endInput.value);
+    if (start > end) {
+      if (changedInput === startInput) {
+        endInput.value = start;
+        end = start;
+      } else {
+        startInput.value = end;
+        start = end;
+      }
+    }
+    rangeOutput.value = `${formatMinute(start)} - ${formatMinute(end)}`;
+  }
+
+  if (startInput && endInput && rangeOutput) {
+    startInput.addEventListener("input", () => updateTimeRange(startInput));
+    endInput.addEventListener("input", () => updateTimeRange(endInput));
+  }
+</script>
+{% endblock %}

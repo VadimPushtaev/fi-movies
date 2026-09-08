@@ -388,7 +388,7 @@ def parse_datetime(value: Any) -> datetime | None:
     if not raw:
         return None
     raw = raw.strip().removesuffix("Z")
-    for fmt in ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M", "%d.%m.%Y %H:%M"):
+    for fmt in ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M", "%d.%m.%Y %H:%M", "%d-%m-%Y %H:%M"):
         try:
             return datetime.strptime(raw, fmt)
         except ValueError:
