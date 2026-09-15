@@ -41,6 +41,15 @@ these IDs on its next scrape. The logo comes from the
 [official Letterboxd brand assets](https://letterboxd.com/about/brand/), and direct
 links use [Letterboxd's TMDB URL format](https://letterboxd.com/about/faq/#linking-to-films).
 
+## HIFF Timetable
+
+Open `http://localhost:58000/hiff` for a separate, locally stored copy of the
+[Love & Anarchy timetable](https://hiff.fi/en/love-anarchy/timetable/). On a new
+database, the web service imports it once in the background. Later imports happen
+only when **Rescrape timetable** is pressed on that page. The import stores films,
+screenings, posters, HIFF detail links, and Letterboxd links in PostgreSQL; a failed
+refresh leaves the previous timetable intact.
+
 By default, Docker Compose exposes the web app on host port `58000` and
 PostgreSQL on host port `55432` to avoid common local port conflicts. Override
 them when needed:

@@ -1,21 +1,54 @@
 from __future__ import annotations
 
+import asyncio
 from collections import defaultdict
+from contextlib import asynccontextmanager, suppress
 from datetime import date, datetime, timedelta
 from typing import Any
 from urllib.parse import quote, urlparse
 from zoneinfo import ZoneInfo
 
-from fastapi import Depends, FastAPI, Query, Request
-from fastapi.responses import HTMLResponse
+from fastapi import BackgroundTasks, Depends, FastAPI, Query, Request
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
-from fi_movies.db import get_session
-from fi_movies.repositories import available_dates, latest_scrape_run, list_cities, showtimes_for_day
+from fi_movies.db import SessionLocal, get_session
+from fi_movies.hiff_repository import (
+    hiff_dates,
+    hiff_screening_count,
+    hiff_screenings_for_day,
+    mark_interrupted_hiff_scrapes,
+    running_hiff_scrape,
+)
+from fi_movies.hiff_service import run_hiff_scrape
+from fi_movies.repositories import (
+    available_dates,
+    latest_scrape_run,
+    list_cities,
+    showtimes_for_day,
+    start_scrape_run,
+)
 
-app = FastAPI(title="FI Movies")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    initial_task = None
+    with SessionLocal() as session:
+        mark_interrupted_hiff_scrapes(session)
+        if hiff_screening_count(session) == 0:
+            run = start_scrape_run(session, source="hiff")
+            initial_task = asyncio.create_task(run_hiff_scrape(run.id))
+    app.state.hiff_initial_task = initial_task
+    yield
+    if initial_task is not None and not initial_task.done():
+        initial_task.cancel()
+        with suppress(asyncio.CancelledError):
+            await initial_task
+
+
+app = FastAPI(title="FI Movies", lifespan=lifespan)
 templates = Jinja2Templates(directory="src/fi_movies/templates")
 app.mount("/static", StaticFiles(directory="src/fi_movies/static"), name="static")
 
@@ -57,7 +90,7 @@ def index(
             "cities": cities,
             "dates": dates,
             "groups": grouped,
-            "latest_run": latest_scrape_run(session),
+            "latest_run": latest_scrape_run(session, source="nytleffaan"),
             "selected_city": selected_city,
             "selected_date": selected_date,
             "query": q or "",
@@ -69,6 +102,49 @@ def index(
             "showtime_count": count_grouped_showtimes(grouped),
         },
     )
+
+
+@app.get("/hiff", response_class=HTMLResponse)
+def hiff_index(
+    request: Request,
+    session: Session = Depends(get_session),
+    day: date | None = Query(default=None, alias="date"),
+    started: bool = Query(default=False),
+) -> HTMLResponse:
+    dates = hiff_dates(session)
+    today = datetime.now(ZoneInfo("Europe/Helsinki")).date()
+    selected_date = choose_hiff_date(day, dates, today=today)
+    screenings = hiff_screenings_for_day(session, selected_date) if selected_date else []
+    latest_run = latest_scrape_run(session, source="hiff")
+    return templates.TemplateResponse(
+        request,
+        "hiff.html",
+        {
+            "dates": dates,
+            "selected_date": selected_date,
+            "screenings": screenings,
+            "latest_run": latest_run,
+            "scrape_running": running_hiff_scrape(session) is not None,
+            "scrape_started": started,
+        },
+    )
+
+
+@app.post("/hiff/rescrape", response_class=RedirectResponse)
+def hiff_rescrape(
+    background_tasks: BackgroundTasks,
+    session: Session = Depends(get_session),
+) -> RedirectResponse:
+    if running_hiff_scrape(session) is None:
+        run = start_scrape_run(session, source="hiff")
+        background_tasks.add_task(run_hiff_scrape, run.id)
+    return RedirectResponse(url="/hiff?started=true", status_code=303)
+
+
+def choose_hiff_date(requested: date | None, dates: list[date], *, today: date) -> date | None:
+    if requested in dates:
+        return requested
+    return next((item for item in dates if item >= today), dates[-1] if dates else None)
 
 
 def group_showtimes(showtimes: list) -> list[dict]:

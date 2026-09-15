@@ -107,3 +107,34 @@ class ScrapeRun(Base):
     movies_seen: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     theaters_seen: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     showtimes_seen: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+
+
+class HiffMovie(Base, TimestampMixin):
+    __tablename__ = "hiff_movies"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    source_url: Mapped[str] = mapped_column(Text, unique=True, nullable=False)
+    title: Mapped[str] = mapped_column(String(500), nullable=False)
+    original_title: Mapped[str | None] = mapped_column(String(500))
+    poster_url: Mapped[str | None] = mapped_column(Text)
+    letterboxd_url: Mapped[str | None] = mapped_column(Text)
+
+    screenings: Mapped[list["HiffScreening"]] = relationship(
+        back_populates="movie", cascade="all, delete-orphan"
+    )
+
+
+class HiffScreening(Base, TimestampMixin):
+    __tablename__ = "hiff_screenings"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    source_key: Mapped[str] = mapped_column(String(180), unique=True, nullable=False)
+    movie_id: Mapped[int] = mapped_column(ForeignKey("hiff_movies.id", ondelete="CASCADE"), nullable=False)
+    venue: Mapped[str] = mapped_column(String(300), nullable=False)
+    starts_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, index=True)
+    ends_at: Mapped[datetime | None] = mapped_column(DateTime)
+    duration_minutes: Mapped[int | None] = mapped_column(Integer)
+    screening_number: Mapped[int | None] = mapped_column(Integer)
+    screening_total: Mapped[int | None] = mapped_column(Integer)
+
+    movie: Mapped[HiffMovie] = relationship(back_populates="screenings")

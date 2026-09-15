@@ -20,6 +20,7 @@ class TmdbMovieMetadata:
     overview: str | None
     genres: list[str]
     runtime: int | None
+    poster_url: str | None
 
 
 class TmdbClient:
@@ -66,6 +67,26 @@ class TmdbClient:
                 enriched.append(apply_metadata(movie, metadata))
             return enriched
 
+    async def metadata_for_titles(
+        self, searches: list[tuple[str, int | None]]
+    ) -> list[TmdbMovieMetadata | None]:
+        if not self.is_configured:
+            return [None] * len(searches)
+        async with httpx.AsyncClient(
+            base_url=self.base_url,
+            timeout=self.timeout_seconds,
+            headers=self._headers(),
+            transport=self.transport,
+        ) as client:
+            results = []
+            for title, year in searches:
+                try:
+                    results.append(await self._metadata_for_title(client, title=title, year=year))
+                except httpx.HTTPError:
+                    logger.exception("TMDB lookup failed for %s", title)
+                    results.append(None)
+            return results
+
     async def _metadata_for_movie(
         self,
         client: httpx.AsyncClient,
@@ -84,7 +105,7 @@ class TmdbClient:
     async def _metadata_for_title(
         self, client: httpx.AsyncClient, *, title: str, year: int | None
     ) -> TmdbMovieMetadata | None:
-        for search_year in (year, None):
+        for search_year in dict.fromkeys((year, None)):
             results = await self._search_movies(client, title=title, year=search_year)
             match = best_match(title=title, year=year, results=results)
             if match is None:
@@ -207,12 +228,14 @@ def metadata_from_details(details: dict[str, Any], *, tmdb_id: int) -> TmdbMovie
         if isinstance(genre, dict) and genre.get("name")
     ]
     runtime = details.get("runtime")
+    poster_path = clean_metadata_text(details.get("poster_path"))
     return TmdbMovieMetadata(
         tmdb_id=tmdb_id,
         title=clean_metadata_text(details.get("title")),
         overview=clean_metadata_text(details.get("overview")),
         genres=genres,
         runtime=runtime if isinstance(runtime, int) else None,
+        poster_url=f"https://image.tmdb.org/t/p/w500{poster_path}" if poster_path else None,
     )
 
 

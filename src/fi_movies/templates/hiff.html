@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}HIFF Timetable - FI Movies{% endblock %}
+
+{% block content %}
+<section class="hiff-heading">
+  <div>
+    <p class="eyebrow">Helsinki International Film Festival</p>
+    <h1>Love & Anarchy timetable</h1>
+    {% if latest_run and latest_run.finished_at %}
+      <p class="scrape-status">
+        Stored locally · last scrape {{ latest_run.finished_at.strftime("%d.%m.%Y %H:%M") }} ·
+        {{ latest_run.movies_seen }} films · {{ latest_run.showtimes_seen }} screenings
+      </p>
+    {% endif %}
+  </div>
+  <form method="post" action="/hiff/rescrape">
+    <button class="rescrape-button" type="submit" {% if scrape_running %}disabled{% endif %}>
+      {% if scrape_running %}Scraping in background…{% else %}Rescrape timetable{% endif %}
+    </button>
+  </form>
+</section>
+
+{% if scrape_started %}
+  <p class="notice">The HIFF timetable refresh has started in the background.</p>
+{% endif %}
+{% if latest_run and latest_run.status == "failed" %}
+  <p class="notice error">The last scrape failed: {{ latest_run.message }}</p>
+{% endif %}
+
+{% if dates %}
+  <nav class="hiff-date-nav" aria-label="Festival dates">
+    {% for item in dates %}
+      <a href="/hiff?date={{ item.isoformat() }}" {% if item == selected_date %}aria-current="page"{% endif %}>
+        <span>{{ item.strftime("%a") }}</span>
+        {{ item.strftime("%d.%m.") }}
+      </a>
+    {% endfor %}
+  </nav>
+
+  <section class="hiff-day">
+    <div class="hiff-day-title">
+      <h2>{{ selected_date.strftime("%A %d.%m.%Y") }}</h2>
+      <p>{{ screenings|length }} screenings</p>
+    </div>
+    <div class="hiff-list">
+      {% for screening in screenings %}
+        <article class="hiff-card">
+          <a class="hiff-poster" href="{{ screening.movie.source_url }}" target="_blank" rel="noopener noreferrer">
+            {% if screening.movie.poster_url %}
+              <img src="{{ screening.movie.poster_url }}" alt="{{ screening.movie.title }} poster" loading="lazy">
+            {% else %}
+              <span class="poster-placeholder">{{ screening.movie.title[:1] }}</span>
+            {% endif %}
+          </a>
+          <div class="hiff-card-body">
+            <div class="hiff-time">
+              {{ screening.starts_at.strftime("%H:%M") }}
+              {% if screening.ends_at %}–{{ screening.ends_at.strftime("%H:%M") }}{% endif %}
+            </div>
+            <div class="hiff-card-heading">
+              <div>
+                <h3>{{ screening.movie.title }}</h3>
+                {% if screening.movie.original_title and screening.movie.original_title != screening.movie.title %}
+                  <p>{{ screening.movie.original_title }}</p>
+                {% endif %}
+              </div>
+              {% if screening.movie.letterboxd_url %}
+                <a
+                  class="letterboxd-link"
+                  href="{{ screening.movie.letterboxd_url }}"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="View {{ screening.movie.title }} on Letterboxd (opens in a new tab)"
+                  title="View on Letterboxd"
+                >
+                  <img src="{{ url_for('static', path='letterboxd.svg') }}" alt="" width="32" height="32">
+                </a>
+              {% endif %}
+            </div>
+            <p class="hiff-meta">
+              <strong>{{ screening.venue }}</strong>
+              {% if screening.duration_minutes %} · {{ screening.duration_minutes }} min{% endif %}
+              {% if screening.screening_number and screening.screening_total %}
+                · screening {{ screening.screening_number }}/{{ screening.screening_total }}
+              {% endif %}
+            </p>
+            <a class="hiff-details-link" href="{{ screening.movie.source_url }}" target="_blank" rel="noopener noreferrer">
+              HIFF details & tickets
+            </a>
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+  </section>
+{% else %}
+  <section class="empty-state">
+    <h2>{% if scrape_running %}Importing the HIFF timetable…{% else %}No HIFF timetable stored{% endif %}</h2>
+    <p>{% if scrape_running %}This page will populate when the background scrape finishes.{% else %}Use the rescrape button to import it.{% endif %}</p>
+  </section>
+{% endif %}
+
+{% if scrape_running %}
+<script>
+  window.setTimeout(() => { window.location.href = "/hiff"; }, 5000);
+</script>
+{% endif %}
+{% endblock %}

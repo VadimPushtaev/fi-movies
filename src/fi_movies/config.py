@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     korjaamo_enabled: bool = True
     riviera_base_url: str = "https://www.rivieracinemas.fi"
     riviera_enabled: bool = True
+    hiff_timetable_url: str = "https://hiff.fi/en/love-anarchy/timetable/"
     tmdb_api_key: str | None = None
     tmdb_read_access_token: str | None = None
     tmdb_read_access_token_file: str = "/run/secrets/tmdb_token"

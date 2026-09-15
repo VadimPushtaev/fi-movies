@@ -106,6 +106,7 @@ def test_tmdb_enrichment_uses_original_title_and_english_metadata() -> None:
                     "overview": "A science teacher wakes up alone on a spaceship.",
                     "genres": [{"name": "Science Fiction"}, {"name": "Adventure"}],
                     "runtime": 157,
+                    "poster_path": "/hail-mary.jpg",
                 },
             )
         raise AssertionError(f"Unexpected TMDB request: {request.url}")
@@ -117,6 +118,10 @@ def test_tmdb_enrichment_uses_original_title_and_english_metadata() -> None:
     assert enriched[0].description == "A science teacher wakes up alone on a spaceship."
     assert enriched[0].genres == ["Science Fiction", "Adventure"]
     assert enriched[0].tmdb_id == 123
+
+    metadata = asyncio.run(client.metadata_for_titles([("Project Hail Mary", 2026)]))
+    assert metadata[0] is not None
+    assert metadata[0].poster_url == "https://image.tmdb.org/t/p/w500/hail-mary.jpg"
 
 
 def test_tmdb_enrichment_is_noop_without_credentials() -> None:

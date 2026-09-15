@@ -179,8 +179,11 @@ def list_cities(session: Session) -> list[City]:
     return list(session.scalars(select(City).order_by(City.name)))
 
 
-def latest_scrape_run(session: Session) -> ScrapeRun | None:
-    return session.scalar(select(ScrapeRun).order_by(ScrapeRun.started_at.desc()).limit(1))
+def latest_scrape_run(session: Session, *, source: str | None = None) -> ScrapeRun | None:
+    statement = select(ScrapeRun)
+    if source is not None:
+        statement = statement.where(ScrapeRun.source == source)
+    return session.scalar(statement.order_by(ScrapeRun.started_at.desc()).limit(1))
 
 
 def showtimes_for_day(
