@@ -6,7 +6,12 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 from starlette.requests import Request
 
-from fi_movies.hiff_repository import hiff_dates, hiff_screenings_for_day, replace_hiff_timetable
+from fi_movies.hiff_repository import (
+    hiff_dates,
+    hiff_screenings_for_day,
+    hiff_screenings_for_movies,
+    replace_hiff_timetable,
+)
 from fi_movies.models import Base
 from fi_movies.scrapers.hiff import HiffMovieData, HiffPayload, HiffScreeningData, parse_movie_html, parse_timetable_html
 from fi_movies.web import app, choose_hiff_date, hiff_index
@@ -147,6 +152,62 @@ def test_store_and_render_hiff_timetable() -> None:
     )
     assert document.select_one('form[action="/hiff/rescrape"] button').get_text(strip=True) == "Rescrape timetable"
     assert "".join(document.select_one(".hiff-time").get_text().split()) == "16:45–19:40"
+    assert document.select_one(".screening-alternatives-trigger") is None
+
+
+def test_screening_label_opens_other_stored_screenings() -> None:
+    session = make_session()
+    first_payload = payload()
+    second = HiffScreeningData(
+        source_key="rec-two",
+        movie_url=first_payload.movies[0].source_url,
+        venue="Cinema Orion",
+        starts_at=datetime(2026, 9, 18, 20, 0),
+        ends_at=datetime(2026, 9, 18, 22, 55),
+        duration_minutes=155,
+        screening_number=2,
+        screening_total=2,
+    )
+    replace_hiff_timetable(
+        session,
+        HiffPayload(movies=first_payload.movies, screenings=[*first_payload.screenings, second]),
+    )
+    session.commit()
+    first = hiff_screenings_for_day(session, date(2026, 9, 17))[0]
+    other = hiff_screenings_for_day(session, date(2026, 9, 18))[0]
+    assert [item.id for item in hiff_screenings_for_movies(session, {first.movie_id})[first.movie_id]] == [
+        first.id,
+        other.id,
+    ]
+
+    request = Request(
+        {
+            "type": "http",
+            "method": "GET",
+            "path": "/hiff",
+            "headers": [],
+            "query_string": b"date=2026-09-17",
+            "router": app.router,
+            "app": app,
+            "server": ("testserver", 80),
+            "scheme": "http",
+            "client": ("testclient", 50000),
+        }
+    )
+    response = hiff_index(request, session, day=date(2026, 9, 17), started=False)
+    document = BeautifulSoup(response.body, "html.parser")
+    trigger = document.select_one(".screening-alternatives-trigger")
+    assert trigger.get_text(" ", strip=True) == "screening 1/2"
+    assert trigger["popovertarget"] == f"screenings-{first.id}"
+    popover = document.select_one(f"#screenings-{first.id}")
+    assert popover["popover"] == "auto"
+    assert popover["role"] == "dialog"
+    link = popover.select_one(".screening-alternatives-list a")
+    assert link["href"] == f"/hiff?date=2026-09-18#screening-{other.id}"
+    assert link.time["datetime"] == "2026-09-18T20:00:00"
+    assert "20:00" in link.get_text()
+    assert "Cinema Orion" in link.get_text()
+    assert "16:45" not in popover.get_text()
 
 
 def test_choose_hiff_date_prefers_requested_then_next_festival_day() -> None:

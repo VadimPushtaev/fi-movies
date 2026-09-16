@@ -19,6 +19,7 @@ from fi_movies.hiff_repository import (
     hiff_dates,
     hiff_screening_count,
     hiff_screenings_for_day,
+    hiff_screenings_for_movies,
     mark_interrupted_hiff_scrapes,
     running_hiff_scrape,
 )
@@ -116,6 +117,11 @@ def hiff_index(
     today = datetime.now(ZoneInfo("Europe/Helsinki")).date()
     selected_date = choose_hiff_date(day, dates, today=today)
     screenings = hiff_screenings_for_day(session, selected_date) if selected_date else []
+    screenings_by_movie = hiff_screenings_for_movies(session, {item.movie_id for item in screenings})
+    alternative_screenings = {
+        item.id: [other for other in screenings_by_movie[item.movie_id] if other.id != item.id]
+        for item in screenings
+    }
     latest_run = latest_scrape_run(session, source="hiff")
     return templates.TemplateResponse(
         request,
@@ -124,6 +130,7 @@ def hiff_index(
             "dates": dates,
             "selected_date": selected_date,
             "screenings": screenings,
+            "alternative_screenings": alternative_screenings,
             "latest_run": latest_run,
             "scrape_running": running_hiff_scrape(session) is not None,
             "scrape_started": started,

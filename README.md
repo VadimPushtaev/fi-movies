@@ -50,7 +50,8 @@ Open `http://localhost:58000/hiff` for a separate, locally stored copy of the
 database, the web service imports it once in the background. Later imports happen
 only when **Rescrape timetable** is pressed on that page. The import stores films,
 screenings, posters, HIFF detail links, and Letterboxd links in PostgreSQL; a failed
-refresh leaves the previous timetable intact.
+refresh leaves the previous timetable intact. Click a screening number (such as
+**screening 1/2**) to see the movie's other stored dates and times and jump to one.
 
 By default, Docker Compose exposes the web app on host port `58000` and
 PostgreSQL on host port `55432` to avoid common local port conflicts. Override

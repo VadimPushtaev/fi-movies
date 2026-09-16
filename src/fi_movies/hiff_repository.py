@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import defaultdict
 from datetime import date, datetime, time, timedelta
 
 from sqlalchemy import delete, func, select
@@ -67,6 +68,20 @@ def hiff_screenings_for_day(session: Session, day: date) -> list[HiffScreening]:
             .order_by(HiffScreening.starts_at, HiffScreening.venue, HiffScreening.id)
         )
     )
+
+
+def hiff_screenings_for_movies(session: Session, movie_ids: set[int]) -> dict[int, list[HiffScreening]]:
+    if not movie_ids:
+        return {}
+    by_movie: dict[int, list[HiffScreening]] = defaultdict(list)
+    screenings = session.scalars(
+        select(HiffScreening)
+        .where(HiffScreening.movie_id.in_(movie_ids))
+        .order_by(HiffScreening.starts_at, HiffScreening.venue, HiffScreening.id)
+    )
+    for screening in screenings:
+        by_movie[screening.movie_id].append(screening)
+    return dict(by_movie)
 
 
 def hiff_screening_count(session: Session) -> int:

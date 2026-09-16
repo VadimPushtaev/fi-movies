@@ -46,7 +46,8 @@
     <div class="hiff-list">
       {% for screening in screenings %}
         {% set rating_embed = rating_embeds.get(screening.movie_id) %}
-        <article class="hiff-card">
+        {% set alternatives = alternative_screenings.get(screening.id, []) %}
+        <article class="hiff-card" id="screening-{{ screening.id }}">
           <a class="hiff-poster" href="{{ screening.movie.source_url }}" target="_blank" rel="noopener noreferrer">
             {% if screening.movie.poster_url %}
               <img src="{{ screening.movie.poster_url }}" alt="{{ screening.movie.title }} poster" loading="lazy">
@@ -83,7 +84,22 @@
             <p class="hiff-meta">
               <strong>{{ screening.venue }}</strong>
               {% if screening.duration_minutes %} · {{ screening.duration_minutes }} min{% endif %}
-              {% if screening.screening_number and screening.screening_total %}
+              {% if alternatives %}
+                · <button
+                    class="screening-alternatives-trigger"
+                    type="button"
+                    popovertarget="screenings-{{ screening.id }}"
+                    aria-haspopup="dialog"
+                    aria-controls="screenings-{{ screening.id }}"
+                    aria-label="Show other screenings of {{ screening.movie.title }}"
+                  >
+                    {% if screening.screening_number and screening.screening_total %}
+                      screening {{ screening.screening_number }}/{{ screening.screening_total }}
+                    {% else %}
+                      {{ alternatives|length }} other screening{% if alternatives|length != 1 %}s{% endif %}
+                    {% endif %}
+                  </button>
+              {% elif screening.screening_number and screening.screening_total %}
                 · screening {{ screening.screening_number }}/{{ screening.screening_total }}
               {% endif %}
             </p>
@@ -103,6 +119,40 @@
               ></iframe>
             {% endif %}
           </div>
+          {% if alternatives %}
+            <div
+              class="screening-alternatives-popover"
+              id="screenings-{{ screening.id }}"
+              popover="auto"
+              role="dialog"
+              aria-labelledby="screenings-heading-{{ screening.id }}"
+            >
+              <div class="screening-alternatives-header">
+                <div>
+                  <p class="eyebrow">Other screenings</p>
+                  <h4 id="screenings-heading-{{ screening.id }}">{{ screening.movie.title }}</h4>
+                </div>
+                <button
+                  class="screening-alternatives-close"
+                  type="button"
+                  popovertarget="screenings-{{ screening.id }}"
+                  popovertargetaction="hide"
+                  aria-label="Close other screenings"
+                >×</button>
+              </div>
+              <ul class="screening-alternatives-list">
+                {% for alternative in alternatives %}
+                  <li>
+                    <a href="/hiff?date={{ alternative.starts_at.date().isoformat() }}#screening-{{ alternative.id }}">
+                      <time datetime="{{ alternative.starts_at.isoformat() }}">{{ alternative.starts_at.strftime("%a %d.%m.%Y") }}</time>
+                      <strong>{{ alternative.starts_at.strftime("%H:%M") }}{% if alternative.ends_at %}–{{ alternative.ends_at.strftime("%H:%M") }}{% endif %}</strong>
+                      <span>{{ alternative.venue }}</span>
+                    </a>
+                  </li>
+                {% endfor %}
+              </ul>
+            </div>
+          {% endif %}
         </article>
       {% endfor %}
     </div>
