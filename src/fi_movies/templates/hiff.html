@@ -48,6 +48,7 @@
         {% set rating_embed = rating_embeds.get(screening.movie_id) %}
         {% set letterboxd_link = letterboxd_links.get(screening.movie_id) %}
         {% set alternatives = alternative_screenings.get(screening.id, []) %}
+        {% set screening_label = screening_labels[screening.id] %}
         <article class="hiff-card" id="screening-{{ screening.id }}">
           <div class="hiff-card-top">
             <a class="hiff-poster" href="{{ screening.movie.source_url }}" target="_blank" rel="noopener noreferrer">
@@ -95,14 +96,10 @@
                       aria-controls="screenings-{{ screening.id }}"
                       aria-label="Show other screenings of {{ screening.movie.title }}"
                     >
-                      {% if screening.screening_number and screening.screening_total %}
-                        screening {{ screening.screening_number }}/{{ screening.screening_total }}
-                      {% else %}
-                        {{ alternatives|length }} other screening{% if alternatives|length != 1 %}s{% endif %}
-                      {% endif %}
+                      {{ screening_label }}
                     </button>
-                {% elif screening.screening_number and screening.screening_total %}
-                  · screening {{ screening.screening_number }}/{{ screening.screening_total }}
+                {% else %}
+                  · {{ screening_label }}
                 {% endif %}
               </p>
               <a class="hiff-details-link" href="{{ screening.movie.source_url }}" target="_blank" rel="noopener noreferrer">

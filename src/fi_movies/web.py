@@ -127,6 +127,11 @@ def hiff_index(
         item.id: [other for other in screenings_by_movie[item.movie_id] if other.id != item.id]
         for item in screenings
     }
+    screening_labels = {
+        screening.id: f"screening {position}/{len(movie_screenings)}"
+        for movie_screenings in screenings_by_movie.values()
+        for position, screening in enumerate(movie_screenings, start=1)
+    }
     latest_run = latest_scrape_run(session, source="hiff")
     return templates.TemplateResponse(
         request,
@@ -136,6 +141,7 @@ def hiff_index(
             "selected_date": selected_date,
             "screenings": screenings,
             "alternative_screenings": alternative_screenings,
+            "screening_labels": screening_labels,
             "latest_run": latest_run,
             "scrape_running": running_hiff_scrape(session) is not None,
             "scrape_started": started,
