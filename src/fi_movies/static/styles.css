@@ -252,6 +252,22 @@ h1 {
   display: block;
 }
 
+.letterboxd-summary {
+  align-items: center;
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
+.letterboxd-rating {
+  background: #fff;
+  border: 0;
+  display: block;
+  flex: 0 0 250px;
+  height: 190px;
+  max-width: 100%;
+}
+
 h2 {
   font-size: 24px;
   line-height: 1.2;
@@ -506,7 +522,27 @@ button:disabled {
     width: 100%;
   }
 
+  .movie-header,
+  .hiff-card-heading {
+    flex-wrap: wrap;
+  }
+
+  .letterboxd-summary {
+    flex-wrap: wrap;
+    max-width: 100%;
+  }
+
   .poster {
     max-width: 180px;
+  }
+}
+
+@media (max-width: 560px) {
+  .hiff-card {
+    grid-template-columns: 1fr;
+  }
+
+  .hiff-poster {
+    width: 110px;
   }
 }

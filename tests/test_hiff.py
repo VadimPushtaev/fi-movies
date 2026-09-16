@@ -138,6 +138,10 @@ def test_store_and_render_hiff_timetable() -> None:
     assert document.select_one(".hiff-card h3").get_text(strip=True) == "Opening Gala: La bola negra"
     assert document.select_one(".hiff-poster img")["src"] == "https://hiff.fi/poster.jpg"
     assert document.select_one(".letterboxd-link")["href"] == "https://letterboxd.com/film/la-bola-negra/"
+    assert document.select_one(".letterboxd-rating")["src"] == (
+        "https://embed.letterboxd.com/film/la-bola-negra/embed-histogram/"
+        "?noTitle=true&theme=light&noBackground=true"
+    )
     assert document.select_one('form[action="/hiff/rescrape"] button').get_text(strip=True) == "Rescrape timetable"
     assert "".join(document.select_one(".hiff-time").get_text().split()) == "16:45–19:40"
 

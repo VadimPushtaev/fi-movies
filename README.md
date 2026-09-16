@@ -40,6 +40,8 @@ to the film; unmatched movies fall back to a title search. The worker populates
 these IDs on its next scrape. The logo comes from the
 [official Letterboxd brand assets](https://letterboxd.com/about/brand/), and direct
 links use [Letterboxd's TMDB URL format](https://letterboxd.com/about/faq/#linking-to-films).
+Exact Letterboxd matches also show Letterboxd's live weighted rating and rating
+histogram beside the logo, using its [official ratings embed](https://letterboxd.com/about/embed-our-ratings/).
 
 ## HIFF Timetable
 

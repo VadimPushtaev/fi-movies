@@ -66,16 +66,30 @@
                 {% endif %}
               </div>
               {% if screening.movie.letterboxd_url %}
-                <a
-                  class="letterboxd-link"
-                  href="{{ screening.movie.letterboxd_url }}"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="View {{ screening.movie.title }} on Letterboxd (opens in a new tab)"
-                  title="View on Letterboxd"
-                >
-                  <img src="{{ url_for('static', path='letterboxd.svg') }}" alt="" width="32" height="32">
-                </a>
+                <div class="letterboxd-summary">
+                  <a
+                    class="letterboxd-link"
+                    href="{{ screening.movie.letterboxd_url }}"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="View {{ screening.movie.title }} on Letterboxd (opens in a new tab)"
+                    title="View on Letterboxd"
+                  >
+                    <img src="{{ url_for('static', path='letterboxd.svg') }}" alt="" width="32" height="32">
+                  </a>
+                  {% if rating_embeds.get(screening.movie_id) %}
+                    <iframe
+                      class="letterboxd-rating"
+                      src="{{ rating_embeds[screening.movie_id] }}"
+                      title="Letterboxd rating and rating distribution for {{ screening.movie.title }}"
+                      width="250"
+                      height="190"
+                      frameborder="0"
+                      loading="lazy"
+                      scrolling="no"
+                    ></iframe>
+                  {% endif %}
+                </div>
               {% endif %}
             </div>
             <p class="hiff-meta">

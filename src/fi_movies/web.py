@@ -23,6 +23,7 @@ from fi_movies.hiff_repository import (
     running_hiff_scrape,
 )
 from fi_movies.hiff_service import run_hiff_scrape
+from fi_movies.letterboxd import rating_embed_url
 from fi_movies.repositories import (
     available_dates,
     latest_scrape_run,
@@ -126,6 +127,10 @@ def hiff_index(
             "latest_run": latest_run,
             "scrape_running": running_hiff_scrape(session) is not None,
             "scrape_started": started,
+            "rating_embeds": {
+                screening.movie_id: rating_embed_url(screening.movie.letterboxd_url)
+                for screening in screenings
+            },
         },
     )
 
@@ -173,11 +178,13 @@ def group_showtimes(showtimes: list) -> list[dict]:
         theaters = defaultdict(list)
         for showtime in item["showtimes"].values():
             theaters[showtime.theater].append(showtime)
+        film_url = letterboxd_url(item["movie"], tmdb_id=item["tmdb_id"])
         result.append(
             {
                 "movie": item["movie"],
-                "letterboxd_url": letterboxd_url(item["movie"], tmdb_id=item["tmdb_id"]),
+                "letterboxd_url": film_url,
                 "letterboxd_is_search": item["tmdb_id"] is None,
+                "letterboxd_rating_embed_url": rating_embed_url(film_url),
                 "theaters": [
                     {"theater": theater, "showtimes": sorted(times, key=lambda show: show.starts_at)}
                     for theater, times in sorted(theaters.items(), key=lambda pair: pair[0].name)

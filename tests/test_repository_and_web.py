@@ -161,6 +161,16 @@ def test_index_page_renders_grouped_showtimes(tmdb_id: int | None) -> None:
     assert set(link["rel"]) == {"noopener", "noreferrer"}
     assert "Cloud" in link["aria-label"]
     assert link.img["src"].endswith("/static/letterboxd.svg")
+    rating = BeautifulSoup(body, "html.parser").select_one(".movie-card .letterboxd-rating")
+    if tmdb_id:
+        assert rating is not None
+        assert rating["src"] == (
+            "https://embed.letterboxd.com/tmdb/123/embed-histogram/"
+            "?noTitle=true&theme=light&noBackground=true"
+        )
+        assert "Cloud" in rating["title"]
+    else:
+        assert rating is None
 
 
 def test_movie_import_preserves_tmdb_id_when_enrichment_is_unavailable() -> None:
