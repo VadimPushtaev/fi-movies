@@ -12,6 +12,11 @@ from fi_movies.letterboxd import rating_embed_url
             "?notitle=true&theme=light",
         ),
         (
+            "https://letterboxd.com/film/nox-2026/cast/",
+            "https://embed.letterboxd.com/film/nox-2026/embed-histogram/"
+            "?notitle=true&theme=light",
+        ),
+        (
             "https://letterboxd.com/tmdb/123/",
             "https://embed.letterboxd.com/tmdb/123/embed-histogram/"
             "?notitle=true&theme=light",

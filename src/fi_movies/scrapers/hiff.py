@@ -11,6 +11,8 @@ from urllib.parse import quote, urljoin, urlparse
 import httpx
 from bs4 import BeautifulSoup
 
+from fi_movies.letterboxd import film_page_url
+
 logger = logging.getLogger(__name__)
 
 
@@ -157,7 +159,7 @@ def parse_movie_html(html_text: str, *, base_url: str) -> HiffMoviePage:
     for link in soup.select('.single-program a[href]'):
         href = urljoin(base_url, str(link.get("href")))
         if urlparse(href).netloc.casefold().endswith("letterboxd.com"):
-            letterboxd = href
+            letterboxd = film_page_url(href)
             break
     return HiffMoviePage(
         original_title=fields.get("original name"),

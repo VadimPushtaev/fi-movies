@@ -61,7 +61,7 @@ def payload() -> HiffPayload:
                 title="Opening Gala: La bola negra",
                 original_title="La Bola Negra",
                 poster_url="https://hiff.fi/poster.jpg",
-                letterboxd_url="https://letterboxd.com/film/la-bola-negra/",
+                letterboxd_url="https://letterboxd.com/film/la-bola-negra/cast/",
                 release_year=2026,
             )
         ],
@@ -101,7 +101,7 @@ def test_parse_hiff_movie_page() -> None:
           <div class="field"><div class="label">Original name</div><div class="value">La Bola Negra</div></div>
           <div class="field"><div class="label">Year</div><div class="value">2026</div></div>
           <div class="field"><div class="label">Links</div><div class="value">
-            <a href="https://letterboxd.com/film/la-bola-negra/">Letterboxd</a>
+            <a href="https://letterboxd.com/film/la-bola-negra/cast/">Letterboxd</a>
           </div></div>
         </div>
         """,

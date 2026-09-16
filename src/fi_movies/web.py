@@ -26,7 +26,7 @@ from fi_movies.hiff_repository import (
     running_hiff_scrape,
 )
 from fi_movies.hiff_service import run_hiff_scrape
-from fi_movies.letterboxd import rating_embed_url
+from fi_movies.letterboxd import film_page_url, rating_embed_url
 from fi_movies.repositories import (
     available_dates,
     latest_scrape_run,
@@ -141,6 +141,10 @@ def hiff_index(
             "scrape_started": started,
             "rating_embeds": {
                 screening.movie_id: rating_embed_url(screening.movie.letterboxd_url)
+                for screening in screenings
+            },
+            "letterboxd_links": {
+                screening.movie_id: film_page_url(screening.movie.letterboxd_url)
                 for screening in screenings
             },
         },

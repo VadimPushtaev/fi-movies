@@ -46,6 +46,7 @@
     <div class="hiff-list">
       {% for screening in screenings %}
         {% set rating_embed = rating_embeds.get(screening.movie_id) %}
+        {% set letterboxd_link = letterboxd_links.get(screening.movie_id) %}
         {% set alternatives = alternative_screenings.get(screening.id, []) %}
         <article class="hiff-card" id="screening-{{ screening.id }}">
           <div class="hiff-card-top">
@@ -64,10 +65,10 @@
               <div class="hiff-card-heading">
                 <div>
                   <h3>
-                    {% if screening.movie.letterboxd_url %}
+                    {% if letterboxd_link %}
                       <a
                         class="letterboxd-title-link"
-                        href="{{ screening.movie.letterboxd_url }}"
+                        href="{{ letterboxd_link }}"
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label="View {{ screening.movie.title }} on Letterboxd (opens in a new tab)"
