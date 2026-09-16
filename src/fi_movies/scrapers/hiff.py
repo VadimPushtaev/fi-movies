@@ -24,6 +24,7 @@ class HiffMovieData:
     poster_url: str | None
     letterboxd_url: str
     release_year: int | None
+    genres: str | None = None
 
 
 @dataclass(frozen=True)

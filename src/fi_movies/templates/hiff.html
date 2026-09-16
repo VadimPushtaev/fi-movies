@@ -105,6 +105,9 @@
             <a class="hiff-details-link" href="{{ screening.movie.source_url }}" target="_blank" rel="noopener noreferrer">
               HIFF details & tickets
             </a>
+            {% if screening.movie.genres %}
+              <p class="hiff-genres">{{ screening.movie.genres }}</p>
+            {% endif %}
             {% if rating_embed %}
               <iframe
                 class="letterboxd-rating hiff-rating"

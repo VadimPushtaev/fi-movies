@@ -118,6 +118,7 @@ class HiffMovie(Base, TimestampMixin):
     original_title: Mapped[str | None] = mapped_column(String(500))
     poster_url: Mapped[str | None] = mapped_column(Text)
     letterboxd_url: Mapped[str | None] = mapped_column(Text)
+    genres: Mapped[str | None] = mapped_column(Text)
 
     screenings: Mapped[list["HiffScreening"]] = relationship(
         back_populates="movie", cascade="all, delete-orphan"

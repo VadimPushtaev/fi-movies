@@ -513,6 +513,13 @@ button:disabled {
   font-weight: 800;
 }
 
+.hiff-genres {
+  color: #77736e;
+  font-size: 11px;
+  letter-spacing: 0.01em;
+  line-height: 1.3;
+}
+
 .screening-alternatives-trigger {
   align-self: auto;
   background: none;

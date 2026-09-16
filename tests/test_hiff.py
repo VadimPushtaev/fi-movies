@@ -64,6 +64,7 @@ def payload() -> HiffPayload:
                 poster_url="https://hiff.fi/poster.jpg",
                 letterboxd_url="https://letterboxd.com/film/la-bola-negra/cast/",
                 release_year=2026,
+                genres="Drama · Thriller",
             )
         ],
         screenings=[
@@ -123,6 +124,7 @@ def test_store_and_render_hiff_timetable() -> None:
     assert (stats.movies, stats.showtimes) == (1, 1)
     assert hiff_dates(session) == [date(2026, 9, 17)]
     assert hiff_screenings_for_day(session, date(2026, 9, 17))[0].movie.original_title == "La Bola Negra"
+    assert hiff_screenings_for_day(session, date(2026, 9, 17))[0].movie.genres == "Drama · Thriller"
 
     request = Request(
         {
@@ -153,6 +155,7 @@ def test_store_and_render_hiff_timetable() -> None:
         "https://embed.letterboxd.com/film/la-bola-negra/embed-histogram/"
         "?notitle=true&theme=light"
     )
+    assert document.select_one(".hiff-genres").get_text(strip=True) == "Drama · Thriller"
     assert document.select_one('form[action="/hiff/rescrape"] button').get_text(strip=True) == "Rescrape timetable"
     assert "".join(document.select_one(".hiff-time").get_text().split()) == "16:45–19:40"
     assert document.select_one(".screening-alternatives-trigger") is None

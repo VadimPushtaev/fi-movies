@@ -25,6 +25,7 @@ def replace_hiff_timetable(session: Session, payload: HiffPayload) -> ImportStat
             original_title=item.original_title,
             poster_url=item.poster_url,
             letterboxd_url=item.letterboxd_url,
+            genres=item.genres,
         )
         session.add(movie)
         movies_by_url[item.source_url] = movie
