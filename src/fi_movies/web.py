@@ -4,6 +4,8 @@ import asyncio
 from collections import defaultdict
 from contextlib import asynccontextmanager, suppress
 from datetime import date, datetime, timedelta
+from hashlib import sha256
+from pathlib import Path
 from typing import Any
 from urllib.parse import quote, urlparse
 from zoneinfo import ZoneInfo
@@ -52,6 +54,9 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="FI Movies", lifespan=lifespan)
 templates = Jinja2Templates(directory="src/fi_movies/templates")
+templates.env.globals["styles_version"] = sha256(
+    (Path(__file__).resolve().parent / "static" / "styles.css").read_bytes()
+).hexdigest()[:12]
 app.mount("/static", StaticFiles(directory="src/fi_movies/static"), name="static")
 
 

@@ -169,4 +169,33 @@
   window.setTimeout(() => { window.location.href = "/hiff"; }, 5000);
 </script>
 {% endif %}
+<script>
+  document.querySelectorAll(".screening-alternatives-trigger").forEach((trigger) => {
+    trigger.addEventListener("click", () => {
+      const popover = document.getElementById(trigger.getAttribute("popovertarget"));
+      if (!popover) return;
+
+      const bounds = trigger.getBoundingClientRect();
+      const edge = 12;
+      const gap = 8;
+      const width = Math.min(400, window.innerWidth - edge * 2);
+      const left = Math.max(edge, Math.min(bounds.left, window.innerWidth - width - edge));
+      const below = window.innerHeight - bounds.bottom - gap - edge;
+      const above = bounds.top - gap - edge;
+
+      popover.classList.add("is-positioned");
+      popover.style.left = `${left}px`;
+      popover.style.right = "auto";
+      if (below >= 180 || below >= above) {
+        popover.style.top = `${bounds.bottom + gap}px`;
+        popover.style.bottom = "auto";
+        popover.style.maxHeight = `${Math.max(80, Math.min(below, window.innerHeight * 0.7, 560))}px`;
+      } else {
+        popover.style.top = "auto";
+        popover.style.bottom = `${window.innerHeight - bounds.top + gap}px`;
+        popover.style.maxHeight = `${Math.max(80, Math.min(above, window.innerHeight * 0.7, 560))}px`;
+      }
+    });
+  });
+</script>
 {% endblock %}

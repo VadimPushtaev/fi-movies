@@ -139,6 +139,8 @@ def test_store_and_render_hiff_timetable() -> None:
     )
     response = hiff_index(request, session, day=date(2026, 9, 17), started=False)
     document = BeautifulSoup(response.body, "html.parser")
+    stylesheet = document.select_one('link[rel="stylesheet"]')
+    assert stylesheet["href"].startswith("http://testserver/static/styles.css?v=")
 
     assert document.select_one(".hiff-card h3").get_text(strip=True) == "Opening Gala: La bola negra"
     assert document.select_one(".hiff-poster img")["src"] == "https://hiff.fi/poster.jpg"
