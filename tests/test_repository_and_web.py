@@ -152,7 +152,7 @@ def test_index_page_renders_grouped_showtimes(tmdb_id: int | None) -> None:
     assert 'name="start_minute"' in body
     assert 'name="end_minute"' in body
     assert "22.08.2025" not in body
-    link = BeautifulSoup(body, "html.parser").select_one(".movie-card .letterboxd-link")
+    link = BeautifulSoup(body, "html.parser").select_one(".movie-card h2 .letterboxd-title-link")
     assert link is not None
     assert link["href"] == (
         "https://letterboxd.com/tmdb/123/" if tmdb_id else "https://letterboxd.com/search/films/Kuraudo/"
@@ -160,13 +160,14 @@ def test_index_page_renders_grouped_showtimes(tmdb_id: int | None) -> None:
     assert link["target"] == "_blank"
     assert set(link["rel"]) == {"noopener", "noreferrer"}
     assert "Cloud" in link["aria-label"]
-    assert link.img["src"].endswith("/static/letterboxd.svg")
+    assert link.get_text(strip=True) == "Cloud"
+    assert link.find("img") is None
     rating = BeautifulSoup(body, "html.parser").select_one(".movie-card .letterboxd-rating")
     if tmdb_id:
         assert rating is not None
         assert rating["src"] == (
             "https://embed.letterboxd.com/tmdb/123/embed-histogram/"
-            "?noTitle=true&theme=light&noBackground=true"
+            "?notitle=true&theme=light"
         )
         assert "Cloud" in rating["title"]
     else:

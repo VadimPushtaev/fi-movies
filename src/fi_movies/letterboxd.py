@@ -16,4 +16,4 @@ def rating_embed_url(film_url: str | None) -> str | None:
     path = parsed.path.strip("/")
     if not re.fullmatch(r"(?:film/[a-z0-9-]+|tmdb/[0-9]+|imdb/tt[0-9]+)", path):
         return None
-    return f"https://embed.letterboxd.com/{path}/embed-histogram/?noTitle=true&theme=light&noBackground=true"
+    return f"https://embed.letterboxd.com/{path}/embed-histogram/?notitle=true&theme=light"

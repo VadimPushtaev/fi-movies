@@ -80,41 +80,38 @@
             <div class="poster-placeholder">{{ group.movie.title[:1] }}</div>
           {% endif %}
         </div>
-        <div class="movie-body">
+        <div class="movie-body{% if group.letterboxd_rating_embed_url %} with-letterboxd-rating{% endif %}">
           <div class="movie-header">
             <div>
-              <h2>{{ group.movie.title }}</h2>
+              <h2>
+                <a
+                  class="letterboxd-title-link"
+                  href="{{ group.letterboxd_url }}"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="{% if group.letterboxd_is_search %}Search for{% else %}View{% endif %} {{ group.movie.title }} on Letterboxd (opens in a new tab)"
+                  title="{% if group.letterboxd_is_search %}Search on{% else %}View on{% endif %} Letterboxd"
+                >{{ group.movie.title }}</a>
+              </h2>
               <p>
                 {% if group.movie.age_limit %}{{ group.movie.age_limit }}{% endif %}
                 {% if group.movie.duration_minutes %} · {{ group.movie.duration_minutes }} min{% endif %}
                 {% if group.movie.genres %} · {{ group.movie.genres }}{% endif %}
               </p>
             </div>
-            <div class="letterboxd-summary">
-              <a
-                class="letterboxd-link"
-                href="{{ group.letterboxd_url }}"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="{% if group.letterboxd_is_search %}Search for{% else %}View{% endif %} {{ group.movie.title }} on Letterboxd (opens in a new tab)"
-                title="{% if group.letterboxd_is_search %}Search on{% else %}View on{% endif %} Letterboxd (opens in a new tab)"
-              >
-                <img src="{{ url_for('static', path='letterboxd.svg') }}" alt="" width="32" height="32">
-              </a>
-              {% if group.letterboxd_rating_embed_url %}
-                <iframe
-                  class="letterboxd-rating"
-                  src="{{ group.letterboxd_rating_embed_url }}"
-                  title="Letterboxd rating and rating distribution for {{ group.movie.title }}"
-                  width="250"
-                  height="190"
-                  frameborder="0"
-                  loading="lazy"
-                  scrolling="no"
-                ></iframe>
-              {% endif %}
-            </div>
           </div>
+          {% if group.letterboxd_rating_embed_url %}
+            <iframe
+              class="letterboxd-rating movie-rating"
+              src="{{ group.letterboxd_rating_embed_url }}"
+              title="Letterboxd rating and rating distribution for {{ group.movie.title }}"
+              width="320"
+              height="100"
+              frameborder="0"
+              loading="lazy"
+              scrolling="no"
+            ></iframe>
+          {% endif %}
           {% if group.movie.description %}
             <p class="description">{{ group.movie.description }}</p>
           {% endif %}

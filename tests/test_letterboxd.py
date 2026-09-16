@@ -9,12 +9,12 @@ from fi_movies.letterboxd import rating_embed_url
         (
             "https://letterboxd.com/film/la-bola-negra/",
             "https://embed.letterboxd.com/film/la-bola-negra/embed-histogram/"
-            "?noTitle=true&theme=light&noBackground=true",
+            "?notitle=true&theme=light",
         ),
         (
             "https://letterboxd.com/tmdb/123/",
             "https://embed.letterboxd.com/tmdb/123/embed-histogram/"
-            "?noTitle=true&theme=light&noBackground=true",
+            "?notitle=true&theme=light",
         ),
         ("https://letterboxd.com/search/films/Cloud/", None),
         ("https://letterboxd.com:444/film/cloud/", None),

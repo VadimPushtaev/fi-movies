@@ -45,6 +45,7 @@
     </div>
     <div class="hiff-list">
       {% for screening in screenings %}
+        {% set rating_embed = rating_embeds.get(screening.movie_id) %}
         <article class="hiff-card">
           <a class="hiff-poster" href="{{ screening.movie.source_url }}" target="_blank" rel="noopener noreferrer">
             {% if screening.movie.poster_url %}
@@ -53,44 +54,31 @@
               <span class="poster-placeholder">{{ screening.movie.title[:1] }}</span>
             {% endif %}
           </a>
-          <div class="hiff-card-body">
+          <div class="hiff-card-body{% if rating_embed %} with-letterboxd-rating{% endif %}">
             <div class="hiff-time">
               {{ screening.starts_at.strftime("%H:%M") }}
               {% if screening.ends_at %}–{{ screening.ends_at.strftime("%H:%M") }}{% endif %}
             </div>
             <div class="hiff-card-heading">
               <div>
-                <h3>{{ screening.movie.title }}</h3>
+                <h3>
+                  {% if screening.movie.letterboxd_url %}
+                    <a
+                      class="letterboxd-title-link"
+                      href="{{ screening.movie.letterboxd_url }}"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label="View {{ screening.movie.title }} on Letterboxd (opens in a new tab)"
+                      title="View on Letterboxd"
+                    >{{ screening.movie.title }}</a>
+                  {% else %}
+                    {{ screening.movie.title }}
+                  {% endif %}
+                </h3>
                 {% if screening.movie.original_title and screening.movie.original_title != screening.movie.title %}
                   <p>{{ screening.movie.original_title }}</p>
                 {% endif %}
               </div>
-              {% if screening.movie.letterboxd_url %}
-                <div class="letterboxd-summary">
-                  <a
-                    class="letterboxd-link"
-                    href="{{ screening.movie.letterboxd_url }}"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label="View {{ screening.movie.title }} on Letterboxd (opens in a new tab)"
-                    title="View on Letterboxd"
-                  >
-                    <img src="{{ url_for('static', path='letterboxd.svg') }}" alt="" width="32" height="32">
-                  </a>
-                  {% if rating_embeds.get(screening.movie_id) %}
-                    <iframe
-                      class="letterboxd-rating"
-                      src="{{ rating_embeds[screening.movie_id] }}"
-                      title="Letterboxd rating and rating distribution for {{ screening.movie.title }}"
-                      width="250"
-                      height="190"
-                      frameborder="0"
-                      loading="lazy"
-                      scrolling="no"
-                    ></iframe>
-                  {% endif %}
-                </div>
-              {% endif %}
             </div>
             <p class="hiff-meta">
               <strong>{{ screening.venue }}</strong>
@@ -102,6 +90,18 @@
             <a class="hiff-details-link" href="{{ screening.movie.source_url }}" target="_blank" rel="noopener noreferrer">
               HIFF details & tickets
             </a>
+            {% if rating_embed %}
+              <iframe
+                class="letterboxd-rating hiff-rating"
+                src="{{ rating_embed }}"
+                title="Letterboxd rating and rating distribution for {{ screening.movie.title }}"
+                width="320"
+                height="100"
+                frameborder="0"
+                loading="lazy"
+                scrolling="no"
+              ></iframe>
+            {% endif %}
           </div>
         </article>
       {% endfor %}
