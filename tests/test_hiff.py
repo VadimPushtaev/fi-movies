@@ -11,7 +11,7 @@ from fi_movies.hiff_repository import (
     hiff_dates,
     hiff_screenings_for_day,
     hiff_screenings_for_movies,
-    replace_hiff_timetable,
+    upsert_hiff_timetable,
 )
 from fi_movies.models import Base
 from fi_movies.scrapers.hiff import HiffMovieData, HiffPayload, HiffScreeningData, parse_movie_html, parse_timetable_html
@@ -118,7 +118,7 @@ def test_parse_hiff_movie_page() -> None:
 
 def test_store_and_render_hiff_timetable() -> None:
     session = make_session()
-    stats = replace_hiff_timetable(session, payload())
+    stats = upsert_hiff_timetable(session, payload())
     session.commit()
 
     assert (stats.movies, stats.showtimes) == (1, 1)
@@ -162,6 +162,57 @@ def test_store_and_render_hiff_timetable() -> None:
     assert "screening 1/1" in document.select_one(".hiff-meta").get_text(" ", strip=True)
 
 
+def test_hiff_import_preserves_entries_missing_from_a_later_scrape() -> None:
+    session = make_session()
+    first_payload = payload()
+    upsert_hiff_timetable(session, first_payload)
+    session.commit()
+
+    later_movie_url = "https://hiff.fi/en/program/new-film/"
+    later_movie = replace(
+        first_payload.movies[0],
+        source_url=later_movie_url,
+        title="New Film",
+        original_title=None,
+        letterboxd_url="https://letterboxd.com/film/new-film/",
+        genres="Comedy",
+    )
+    later_screening = replace(
+        first_payload.screenings[0],
+        source_key="rec-new",
+        movie_url=later_movie_url,
+        venue="Cinema Orion",
+        starts_at=datetime(2026, 9, 18, 18, 0),
+        ends_at=datetime(2026, 9, 18, 19, 30),
+    )
+
+    stats = upsert_hiff_timetable(
+        session,
+        HiffPayload(movies=[later_movie], screenings=[later_screening]),
+    )
+    session.commit()
+
+    assert (stats.movies, stats.showtimes) == (1, 1)
+    assert hiff_dates(session) == [date(2026, 9, 17), date(2026, 9, 18)]
+    assert hiff_screenings_for_day(session, date(2026, 9, 17))[0].movie.title == (
+        "Opening Gala: La bola negra"
+    )
+    assert hiff_screenings_for_day(session, date(2026, 9, 18))[0].movie.title == "New Film"
+
+    upsert_hiff_timetable(
+        session,
+        HiffPayload(
+            movies=[later_movie],
+            screenings=[replace(later_screening, venue="Updated Venue")],
+        ),
+    )
+    session.commit()
+
+    updated = hiff_screenings_for_day(session, date(2026, 9, 18))
+    assert len(updated) == 1
+    assert updated[0].venue == "Updated Venue"
+
+
 def test_screening_label_opens_other_stored_screenings() -> None:
     session = make_session()
     first_payload = payload()
@@ -186,7 +237,7 @@ def test_screening_label_opens_other_stored_screenings() -> None:
         screening_number=3,
         screening_total=3,
     )
-    replace_hiff_timetable(
+    upsert_hiff_timetable(
         session,
         HiffPayload(movies=first_payload.movies, screenings=[first_source, second, third]),
     )

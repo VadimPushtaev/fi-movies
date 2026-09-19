@@ -8,7 +8,7 @@ from sqlalchemy import select
 from fi_movies.config import get_settings
 from fi_movies.db import SessionLocal
 from fi_movies.enrichment import TmdbClient
-from fi_movies.hiff_repository import replace_hiff_timetable
+from fi_movies.hiff_repository import upsert_hiff_timetable
 from fi_movies.letterboxd import fetch_film_genres
 from fi_movies.models import HiffMovie, ScrapeRun
 from fi_movies.repositories import finish_scrape_run
@@ -55,7 +55,7 @@ async def run_hiff_scrape(run_id: int) -> None:
                 genre_text = " · ".join(genres) if genres is not None else previous_genres.get(movie.source_url)
                 enriched_movies.append(replace(movie, genres=genre_text))
             payload = replace(payload, movies=enriched_movies)
-            stats = replace_hiff_timetable(session, payload)
+            stats = upsert_hiff_timetable(session, payload)
             finish_scrape_run(session, run, status="success", message=None, stats=stats)
             logger.info("Imported %s HIFF movies and %s screenings", stats.movies, stats.showtimes)
     except Exception as exc:

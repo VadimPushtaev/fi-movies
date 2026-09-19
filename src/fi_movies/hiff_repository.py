@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections import defaultdict
 from datetime import date, datetime, time, timedelta
 
-from sqlalchemy import delete, func, select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session, joinedload
 
 from fi_movies.models import HiffMovie, HiffScreening, ScrapeRun
@@ -11,43 +11,62 @@ from fi_movies.repositories import ImportStats
 from fi_movies.scrapers.hiff import HiffPayload
 
 
-def replace_hiff_timetable(session: Session, payload: HiffPayload) -> ImportStats:
+def upsert_hiff_timetable(session: Session, payload: HiffPayload) -> ImportStats:
+    """Update the scraped timetable without deleting screenings absent from the latest source page."""
     if not payload.movies or not payload.screenings:
-        raise ValueError("Refusing to replace HIFF timetable with empty data")
+        raise ValueError("Refusing to import an empty HIFF timetable")
 
-    session.execute(delete(HiffScreening))
-    session.execute(delete(HiffMovie))
-    movies_by_url: dict[str, HiffMovie] = {}
+    source_urls = {item.source_url for item in payload.movies}
+    movies_by_url = {
+        movie.source_url: movie
+        for movie in session.scalars(select(HiffMovie).where(HiffMovie.source_url.in_(source_urls)))
+    }
     for item in payload.movies:
-        movie = HiffMovie(
-            source_url=item.source_url,
-            title=item.title,
-            original_title=item.original_title,
-            poster_url=item.poster_url,
-            letterboxd_url=item.letterboxd_url,
-            genres=item.genres,
-        )
-        session.add(movie)
-        movies_by_url[item.source_url] = movie
+        movie = movies_by_url.get(item.source_url)
+        if movie is None:
+            movie = HiffMovie(source_url=item.source_url, title=item.title)
+            session.add(movie)
+            movies_by_url[item.source_url] = movie
+        movie.title = item.title
+        if item.original_title is not None:
+            movie.original_title = item.original_title
+        if item.poster_url is not None:
+            movie.poster_url = item.poster_url
+        if item.letterboxd_url:
+            movie.letterboxd_url = item.letterboxd_url
+        if item.genres is not None:
+            movie.genres = item.genres
     session.flush()
 
+    source_keys = {item.source_key for item in payload.screenings}
+    screenings_by_key = {
+        screening.source_key: screening
+        for screening in session.scalars(
+            select(HiffScreening).where(HiffScreening.source_key.in_(source_keys))
+        )
+    }
     imported = 0
     for item in payload.screenings:
         movie = movies_by_url.get(item.movie_url)
         if movie is None:
             continue
-        session.add(
-            HiffScreening(
+        screening = screenings_by_key.get(item.source_key)
+        if screening is None:
+            screening = HiffScreening(
                 source_key=item.source_key,
                 movie_id=movie.id,
                 venue=item.venue,
                 starts_at=item.starts_at,
-                ends_at=item.ends_at,
-                duration_minutes=item.duration_minutes,
-                screening_number=item.screening_number,
-                screening_total=item.screening_total,
             )
-        )
+            session.add(screening)
+            screenings_by_key[item.source_key] = screening
+        screening.movie_id = movie.id
+        screening.venue = item.venue
+        screening.starts_at = item.starts_at
+        screening.ends_at = item.ends_at
+        screening.duration_minutes = item.duration_minutes
+        screening.screening_number = item.screening_number
+        screening.screening_total = item.screening_total
         imported += 1
     session.flush()
     return ImportStats(movies=len(payload.movies), theaters=0, showtimes=imported)
