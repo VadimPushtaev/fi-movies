@@ -39,7 +39,7 @@ services:
     volumes:
       - ./TOKEN:/run/secrets/tmdb_token:ro
     ports:
-      - "127.0.0.1:${WEB_HOST_PORT:-58000}:8000"
+      - "0.0.0.0:${WEB_HOST_PORT:-58000}:8000"
     depends_on:
       migrate:
         condition: service_completed_successfully

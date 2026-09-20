@@ -55,9 +55,9 @@ entries while retaining passed screenings that HIFF has removed from its current
 page. Click a screening number (such as
 **screening 1/2**) to see the movie's other stored dates and times and jump to one.
 
-By default, Docker Compose exposes the web app on host port `58000` and
-PostgreSQL on host port `55432` to avoid common local port conflicts. Override
-them when needed:
+By default, Docker Compose exposes the web app on all network interfaces at host
+port `58000`. PostgreSQL remains available only on localhost at port `55432`.
+Override the ports when needed:
 
 ```bash
 WEB_HOST_PORT=8000 POSTGRES_HOST_PORT=5432 docker compose up --build
