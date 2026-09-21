@@ -112,6 +112,25 @@ def test_query_showtimes_can_filter_by_time_window() -> None:
     assert [result.starts_at.strftime("%H:%M") for result in results] == ["18:30"]
 
 
+def test_query_showtimes_can_filter_by_movie_title() -> None:
+    session = make_session()
+    movie, theater, showtime = sample_data()
+    movie = replace(movie, title="Teenage Sex and Death at Camp Miasma")
+    import_normalized_data(session, movies=[movie], theaters=[theater], showtimes=[showtime])
+
+    results = showtimes_for_day(
+        session,
+        city_slug="helsinki",
+        day=date(2026, 5, 31),
+        query="Teenage Sex and Death at Camp Miasma",
+        start_minute=0,
+        end_minute=1440,
+    )
+
+    assert len(results) == 1
+    assert results[0].movie.title == "Teenage Sex and Death at Camp Miasma"
+
+
 @pytest.mark.parametrize("tmdb_id", [None, 123])
 def test_index_page_renders_grouped_showtimes(tmdb_id: int | None) -> None:
     session = make_session()

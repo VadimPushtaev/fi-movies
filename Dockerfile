@@ -14,7 +14,7 @@ RUN apt-get update \
 ENV PATH="${POETRY_HOME}/bin:${PATH}"
 
 WORKDIR /app
-COPY pyproject.toml README.md ./
+COPY pyproject.toml poetry.lock README.md ./
 RUN poetry install --only main --no-root
 
 COPY alembic.ini ./
